@@ -5,6 +5,7 @@
   --text: #2E2323;
   --primary: #D68479; /* ブラッシュ */
   --accent: #E8C07D;  /* サンド */
+  --label-w: 120px;   /* left label column width */
 
   --text-muted: color-mix(in oklab, var(--text), white 45%);
   --outline: color-mix(in oklab, var(--text), white 80%);
@@ -142,20 +143,18 @@ body {
 .week-strip .day { padding: 6px 8px; border-radius: 10px; border: 1px solid var(--outline); background: var(--surface); cursor: pointer; font-size: 12px; }
 .week-strip .day.active { background: var(--accent); color: #2e2323; border-color: color-mix(in oklab, var(--accent), black 10%); }
 
-.grid-wrap { position: relative; overflow-x: auto; border: 1px solid var(--outline); border-radius: 12px; background: var(--surface); }
+.grid-wrap { position: relative; overflow-x: auto; border: 1px solid var(--outline); border-radius: 12px; background: var(--surface); touch-action: none; user-select: none; }
 .grid { position: relative; min-height: 140px; }
 .grid-inner { position: relative; height: 100%; }
 .grid-rows { position: relative; }
-.row { display: grid; grid-template-columns: 160px 1fr; align-items: stretch; min-height: 44px; }
+.row { display: grid; grid-template-columns: var(--label-w) 1fr; align-items: stretch; min-height: 44px; }
 .row + .row { border-top: 1px dashed var(--outline); }
 .row-label { position: sticky; left: 0; z-index: 1; background: linear-gradient(90deg, var(--surface), transparent); padding: 10px; font-weight: 600; }
 .row-cells { position: relative; height: 100%; }
 .delta { display: inline-block; margin-left: 6px; font-size: 11px; padding: 2px 6px; border-radius: 999px; background: white; border: 1px solid var(--outline); color: var(--text-muted); }
 
-/* Hour ruler */
-.ruler { position: sticky; left: 160px; top: 0; background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.2)); backdrop-filter: blur(2px); border-bottom: 1px dashed var(--outline); display: grid; grid-template-columns: repeat(24, var(--hour-width, 80px)); z-index: 2; }
-.ruler .tick { font-size: 12px; color: color-mix(in oklab, var(--text), white 40%); padding: 4px 6px; border-left: 1px dashed var(--outline); }
-.ruler .tick:first-child { border-left: none; }
+/* Hour ruler removed in favor of per-row labels */
+.ruler { display: none; }
 
 /* Background dayparts blocks per row */
 .dayparts { position: absolute; inset: 0; pointer-events: none; }
@@ -166,7 +165,7 @@ body {
 .dp-evening { background: color-mix(in oklab, var(--primary), white 70%); }
 
 /* Selection overlay */
-.selection { position: absolute; top: 0; bottom: 0; border-left: 2px solid var(--primary); border-right: 2px solid var(--primary); background: color-mix(in oklab, var(--primary), white 85%); border-radius: 8px; box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary), black 10%); }
+.selection { position: absolute; top: 0; bottom: 0; border-left: 2px solid var(--primary); border-right: 2px solid var(--primary); background: transparent; border-radius: 8px; box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary), black 10%); }
 .handle { position: absolute; width: 14px; height: 24px; top: 50%; transform: translateY(-50%); background: var(--primary); border-radius: 6px; cursor: ew-resize; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
 .handle.start { left: -7px; }
 .handle.end { right: -7px; }
@@ -190,3 +189,20 @@ body {
 /* Consensus overlay across all rows (meeting friendliness) */
 .consensus { position: absolute; inset: 0; pointer-events: none; }
 .consensus .cs-slot { position: absolute; top: 0; bottom: 0; background: var(--accent); opacity: var(--alpha, 0.06); border-radius: 4px; }
+
+/* Per-row hour labels and vertical lines */
+.row-hours { position: absolute; inset: 0; pointer-events: none; }
+.row-hours .h { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 14px; font-weight: 600; color: color-mix(in oklab, var(--text), white 45%); font-variant-numeric: tabular-nums; }
+.row-hours .h.date { 
+  font-size: clamp(6px, calc(var(--hour-width, 80px) * 0.24), 12px);
+  font-weight: 700; 
+  color: var(--text); 
+  line-height: 1.05; 
+  text-align: center; 
+  width: calc(var(--hour-width, 80px) - 6px);
+  white-space: normal;
+}
+.row-hours .h.date .d1 { display: block; }
+.row-hours .h.date .d2 { display: block; font-weight: 600; color: color-mix(in oklab, var(--text), white 20%); }
+.vlines { position: absolute; inset: 0; pointer-events: none; }
+.vlines .v { position: absolute; top: 0; bottom: 0; border-left: 1px dashed var(--outline); }

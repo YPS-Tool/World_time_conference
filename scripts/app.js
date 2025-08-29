@@ -428,6 +428,7 @@
       <div class="block-right">
         <button class="btn-icon" data-prev title="前日">◀</button>
         <input type="date" class="input" data-date />
+        <span class="small-muted" data-wd></span>
         <button class="btn-icon" data-next title="翌日">▶</button>
         <button class="btn-icon danger" data-del title="候補を削除">🗑</button>
       </div>
@@ -446,6 +447,8 @@
     // week indicator activation
     const weekBtns = header.querySelectorAll('.day');
     const anchorPartsTop = partsFromTs(anchorUtc, topTz);
+    const wdEl = header.querySelector('[data-wd]');
+    if (wdEl) wdEl.textContent = `(${jpWeekdays[anchorPartsTop.weekday]})`;
     weekBtns.forEach(btn => {
       const wd = Number(btn.dataset.weekday);
       btn.classList.toggle('active', wd === anchorPartsTop.weekday);
@@ -459,17 +462,7 @@
     grid.className = 'grid';
     grid.style.setProperty('--hour-width', `${hourWidth}px`);
 
-    // Hour ruler
-    const ruler = document.createElement('div');
-    ruler.className = 'ruler';
-    ruler.style.setProperty('--hour-width', `${hourWidth}px`);
-    for (let h = 0; h < 24; h++) {
-      const t = document.createElement('div');
-      t.className = 'tick';
-      t.textContent = `${h}:00`;
-      ruler.appendChild(t);
-    }
-    grid.appendChild(ruler);
+    // (top hour ruler removed; each row will display its own hours)
 
     const rows = document.createElement('div');
     rows.className = 'grid-rows';
@@ -480,15 +473,7 @@
       row.className = 'row';
       const label = document.createElement('div');
       label.className = 'row-label';
-      const baseOff = tzOffsetMinutes(anchorUtc, topTz);
-      const cityOff = tzOffsetMinutes(anchorUtc, c.tzId);
-      const deltaMin = cityOff - baseOff;
-      const sgn = deltaMin >= 0 ? '+' : '-';
-      const abs = Math.abs(deltaMin);
-      const dh = Math.floor(abs / 60);
-      const dm = Math.floor(abs % 60);
-      const deltaStr = `${sgn}${pad2(dh)}:${pad2(dm)}`;
-      label.innerHTML = `<div>${c.city_ja || tzSuffix(c.tzId)} <span class="delta">${deltaStr}</span></div><div class="small-muted">${tzOffsetLabel(anchorUtc, c.tzId)}</div>`;
+      label.innerHTML = `<div>${c.city_ja || tzSuffix(c.tzId)}</div><div class="small-muted">${tzOffsetLabel(anchorUtc, c.tzId)}</div>`;
       const cells = document.createElement('div');
       cells.className = 'row-cells';
 
@@ -501,6 +486,12 @@
       dp.className = 'dayparts';
       addDayparts(dp, c.tzId, anchorUtc, hourWidth);
       inner.appendChild(dp);
+
+      // per-row hour labels
+      const rh = document.createElement('div');
+      rh.className = 'row-hours';
+      addRowHours(rh, c.tzId, anchorUtc, hourWidth);
+      inner.appendChild(rh);
 
       // simplified: remove per-row hour numbers to reduce clutter
 
@@ -530,19 +521,17 @@
     // A container to overlay selection and nowline across the scrolling area
     const overlayContainer = document.createElement('div');
     overlayContainer.style.position = 'absolute';
-    overlayContainer.style.left = '160px';
+    overlayContainer.style.left = getLabelWidth() + 'px';
     overlayContainer.style.top = '0';
     overlayContainer.style.right = '0';
     overlayContainer.style.bottom = '0';
+    // Vertical hour grid lines across all rows
+    const vlines = document.createElement('div');
+    vlines.className = 'vlines';
+    addVLines(vlines, hourWidth);
+    overlayContainer.appendChild(vlines);
     overlayContainer.appendChild(sel);
     overlayContainer.appendChild(nowLine);
-    // chips per row
-    const chips = state.cities.map(() => {
-      const el = document.createElement('div');
-      el.className = 'sel-chip hidden';
-      overlayContainer.appendChild(el);
-      return el;
-    });
 
     grid.appendChild(rows);
     grid.appendChild(overlayContainer);
@@ -552,10 +541,10 @@
     // Outputs (collapsible)
     const outputsCard = document.createElement('div');
     outputsCard.className = 'outputs-card';
-    const details = document.createElement('details');
-    const summary = document.createElement('summary'); summary.textContent = '出力を表示';
-    const pre = document.createElement('pre'); pre.className = 'outputs'; pre.textContent = blockOutputsText(block, anchorUtc);
-    details.appendChild(summary); details.appendChild(pre); outputsCard.appendChild(details);
+    const pre = document.createElement('pre');
+    pre.className = 'outputs';
+    pre.textContent = blockOutputsText(block, anchorUtc);
+    outputsCard.appendChild(pre);
     wrap.appendChild(outputsCard);
 
     // Selection positions
@@ -566,27 +555,8 @@
         const width = (block.selection.end - block.selection.start) * slotW;
         sel.style.left = `${left}px`;
         sel.style.width = `${width}px`;
-        // per-row time chips
-        const centerLeft = left + width / 2;
-        const startTs = anchorUtc + block.selection.start * gran * 60000;
-        const endTs = anchorUtc + block.selection.end * gran * 60000;
-        const overlayRect = overlayContainer.getBoundingClientRect();
-        const rowEls = rows.querySelectorAll('.row');
-        chips.forEach((chipEl, i) => {
-          const rowRect = rowEls[i].getBoundingClientRect();
-          const cy = rowRect.top - overlayRect.top + rowRect.height / 2;
-          chipEl.style.left = `${centerLeft}px`;
-          chipEl.style.top = `${cy}px`;
-          chipEl.classList.remove('hidden');
-          const tz = state.cities[i].tzId;
-          const sTxt = formatTimeHHmm(partsFromTs(startTs, tz));
-          const eTxt = sameLocalDay(startTs, endTs, tz)
-            ? formatTimeHHmm(partsFromTs(endTs, tz))
-            : formatJP(endTs, tz);
-          chipEl.textContent = `${sTxt} – ${eTxt}`;
-        });
       } else {
-        chips.forEach(chipEl => chipEl.classList.add('hidden'));
+        // no-op
       }
       // now line position
       const now = Date.now();
@@ -611,7 +581,10 @@
       return clamp(slot, 0, totalSlots);
     }
 
-    overlayContainer.addEventListener('mousedown', (e) => {
+    // Use Pointer Events for smooth dragging (follows cursor while moving)
+    let activePointerId = null;
+    overlayContainer.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
       if (e.target === handleStart) { dragging = 'start'; }
       else if (e.target === handleEnd) { dragging = 'end'; }
       else { dragging = 'range'; }
@@ -623,12 +596,15 @@
         dragAnchorStart = block.selection.start;
       }
       sel.style.display = 'block';
-      onDrag(e);
-      window.addEventListener('mousemove', onDrag);
-      window.addEventListener('mouseup', onUp, { once: true });
+      activePointerId = e.pointerId;
+      overlayContainer.setPointerCapture(activePointerId);
+      onPointerMove(e);
     });
+    overlayContainer.addEventListener('pointermove', onPointerMove);
+    overlayContainer.addEventListener('pointerup', onPointerUp);
+    overlayContainer.addEventListener('pointercancel', onPointerUp);
 
-    function onDrag(e) {
+    function onPointerMove(e) {
       if (!dragging) return;
       const slot = posToSlot(e.clientX);
       if (!block.selection) block.selection = { start: slot, end: slot };
@@ -644,8 +620,11 @@
       }
       updateSelPos();
     }
-    function onUp() {
-      window.removeEventListener('mousemove', onDrag);
+    function onPointerUp(e) {
+      if (activePointerId !== null) {
+        try { overlayContainer.releasePointerCapture(activePointerId); } catch {}
+        activePointerId = null;
+      }
       dragging = null;
       saveBlocks();
       pre.textContent = blockOutputsText(block, anchorUtc);
@@ -711,6 +690,41 @@
         d.style.width = `${(w / 60) * hourWidth}px`;
         container.appendChild(d);
       });
+    }
+  }
+
+  function addRowHours(container, tz, anchorUtc, hourWidth) {
+    const anchor = partsFromTs(anchorUtc, tz);
+    const anchorMin = anchor.hour * 60 + anchor.minute;
+    let zeroPlaced = false;
+    for (let h = 0; h < 24; h++) {
+      const leftMin = h * 60 - anchorMin;
+      makeWrappedRect(leftMin, 60).forEach(([l, w]) => {
+        const d = document.createElement('div');
+        d.className = 'h';
+        if (h === 0 && !zeroPlaced) {
+          const ts = anchorUtc + l * 60000; // start of the local 0:00 block
+          const p = partsFromTs(ts, tz);
+          const dateTxt = `${p.month}/${p.day}`; // m/d
+          const wTxt = `(${jpWeekdays[p.weekday]})`;
+          d.innerHTML = `<span class="d1">${dateTxt}</span><br><span class="d2">${wTxt}</span>`;
+          d.classList.add('date');
+          zeroPlaced = true;
+        } else {
+          d.textContent = `${h}`;
+        }
+        d.style.left = `${(l / 60) * hourWidth + (hourWidth / 2)}px`;
+        container.appendChild(d);
+      });
+    }
+  }
+
+  function addVLines(container, hourWidth) {
+    for (let h = 0; h <= 24; h++) {
+      const v = document.createElement('div');
+      v.className = 'v';
+      v.style.left = `${h * hourWidth}px`;
+      container.appendChild(v);
     }
   }
 
@@ -787,11 +801,21 @@
     return out.trim();
   }
 
+  function getLabelWidth() {
+    const v = getComputedStyle(document.documentElement).getPropertyValue('--label-w').trim();
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : 160;
+  }
+
   function computeHourWidth() {
-    // Clamp 24–160px/hour based on available center panel width
+    // Fit 24h into the visible frame as much as possible
     const center = document.getElementById('panel-center');
-    const w = center.clientWidth - 48; // rough padding allowance
-    const perHour = clamp(Math.floor(w / 12), 24, 160); // try to fit ~12 hours
+    const total = center ? center.clientWidth : 1024;
+    const label = getLabelWidth();
+    // subtract left label and generous paddings/borders/scrollbar (~64px)
+    const usable = Math.max(0, total - label - 64);
+    // subtract a couple pixels to guarantee fit
+    const perHour = clamp(Math.floor((usable - 2) / 24), 10, 120);
     return perHour;
   }
 
