@@ -1,0 +1,12 @@
+{
+  "name": "world-time-tool",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Static interactive world time tool (vanilla)",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  }
+}
+

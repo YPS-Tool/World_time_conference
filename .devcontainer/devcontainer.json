@@ -1,0 +1,55 @@
+{
+  "name": "Node.js + Codex",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "remoteUser": "node",
+
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  "runArgs": ["--add-host=host.docker.internal:host-gateway"],
+
+  "forwardPorts": [1455],
+  "portsAttributes": {
+    "1455": {
+      "label": "Codex login",
+      "onAutoForward": "openBrowser"
+    }
+  },
+
+  "mounts": [
+    "type=bind,source=${localWorkspaceFolder}/.codex,target=/home/node/.codex"
+  ],
+
+  "remoteEnv": {
+    "HOME": "/home/node",
+    "XDG_CONFIG_HOME": "/home/node/.config",
+    "NO_COLOR": "1"
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-typescript-next"
+      ]
+    }
+  },
+
+  "postCreateCommand": "set -e && \
+    (command -v curl >/dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y curl ca-certificates)) && \
+    bash -lc 'curl -LsSf https://astral.sh/uv/install.sh | sh' && \
+    npm install -g @openai/codex@latest && \
+    sudo mkdir -p /home/node/.codex /home/node/.config && \
+    sudo chown -R node:node /home/node/.codex /home/node/.config || true && \
+    sudo chmod 700 /home/node/.codex || true && \
+    git config --global user.name \"yuki\" && \
+    git config --global user.email \"guup76@gmail.com\" && \
+    git config --global --add safe.directory $(pwd) && \
+    node -v && npm -v && codex --version && uv --version || true",
+
+  "postStartCommand": "set -e && \
+    sudo mkdir -p /home/node/.codex /home/node/.config && \
+    sudo chown -R node:node /home/node/.codex /home/node/.config || true && \
+    sudo chmod 700 /home/node/.codex || true"
+}

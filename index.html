@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>World Time Tool v1</title>
+    <meta name="description" content="複数タイムゾーンの時刻を比較し、会議候補を作成・共有するツール" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>World Time Tool v1</h1>
+    </header>
+
+    <main class="app-main">
+      <!-- Left: Cities -->
+      <aside class="panel panel-left" id="panel-left">
+        <div class="panel-header">
+          <div class="panel-title">都市</div>
+          <button class="btn btn-primary" id="btn-open-search">都市を追加</button>
+        </div>
+
+        <div id="current-tz-reco" class="reco hidden"></div>
+
+        <ul id="city-list" class="city-list" aria-live="polite"></ul>
+        <div class="panel-footer small-muted">保存キー: wt-cities</div>
+      </aside>
+
+      <!-- Center: Candidates and grid -->
+      <section class="panel panel-center" id="panel-center">
+        <div id="blocks"></div>
+        <div class="blocks-actions">
+          <button class="btn btn-surface" id="btn-add-block">＋ 候補を追加（最大5）</button>
+          <button class="btn btn-accent" id="btn-copy-all">全候補の時間をコピー</button>
+        </div>
+      </section>
+
+      <!-- Right: Settings -->
+      <aside class="panel panel-right" id="panel-right">
+        <div class="panel-title">設定</div>
+        <div class="setting">
+          <div class="setting-label">粒度</div>
+          <div class="segmented" role="radiogroup" aria-label="粒度">
+            <button class="seg" data-gran="15" aria-pressed="false">15分</button>
+            <button class="seg" data-gran="30" aria-pressed="false">30分</button>
+            <button class="seg" data-gran="60" aria-pressed="false">60分</button>
+          </div>
+          <div class="small-muted">保存キー: wt-view</div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Search Modal -->
+    <div id="search-modal" class="modal hidden" aria-hidden="true" role="dialog" aria-modal="true">
+      <div class="modal-backdrop" data-modal-close></div>
+      <div class="modal-content" role="document">
+        <div class="modal-header">
+          <div class="modal-title">都市を検索</div>
+          <button class="icon-btn" data-modal-close aria-label="閉じる">✕</button>
+        </div>
+        <div class="modal-body">
+          <input id="search-input" class="input" type="search" placeholder="都市名/国名/別名（最大10件）" />
+          <div id="search-status" class="small-muted"></div>
+          <ul id="search-results" class="search-results"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fallback embedded dataset (used when fetch is unavailable, e.g., file://) -->
+    <script type="application/json" id="city-dataset">
+      {
+        "cities": [
+          {"id":"tokyo","tzId":"Asia/Tokyo","city_ja":"東京","city_en":"Tokyo","country_ja":"日本","country_en":"Japan","aliases":["とうきょう","JP","JST","Japan","Nihon","Nippon"]},
+          {"id":"osaka","tzId":"Asia/Tokyo","city_ja":"大阪","city_en":"Osaka","country_ja":"日本","country_en":"Japan","aliases":["おおさか","JP","JST"]},
+          {"id":"kyoto","tzId":"Asia/Tokyo","city_ja":"京都","city_en":"Kyoto","country_ja":"日本","country_en":"Japan","aliases":["きょうと","JP","JST"]},
+          {"id":"yokohama","tzId":"Asia/Tokyo","city_ja":"横浜","city_en":"Yokohama","country_ja":"日本","country_en":"Japan","aliases":["よこはま","JP","JST","Kanagawa"]},
+          {"id":"nagoya","tzId":"Asia/Tokyo","city_ja":"名古屋","city_en":"Nagoya","country_ja":"日本","country_en":"Japan","aliases":["なごや","JP","JST","Aichi"]},
+          {"id":"sapporo","tzId":"Asia/Tokyo","city_ja":"札幌","city_en":"Sapporo","country_ja":"日本","country_en":"Japan","aliases":["さっぽろ","JP","JST","Hokkaido"]},
+          {"id":"fukuoka","tzId":"Asia/Tokyo","city_ja":"福岡","city_en":"Fukuoka","country_ja":"日本","country_en":"Japan","aliases":["ふくおか","フクオカ","Hakata","はかた","博多","JP","JST"]},
+          {"id":"hiroshima","tzId":"Asia/Tokyo","city_ja":"広島","city_en":"Hiroshima","country_ja":"日本","country_en":"Japan","aliases":["ひろしま","JP","JST"]},
+          {"id":"naha","tzId":"Asia/Tokyo","city_ja":"那覇","city_en":"Naha","country_ja":"日本","country_en":"Japan","aliases":["なは","Okinawa","JP","JST"]}
+        ]
+      }
+    </script>
+
+    <script defer src="scripts/app.js"></script>
+  </body>
+  </html>
