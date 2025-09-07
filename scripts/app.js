@@ -32,6 +32,11 @@
   const jpWeekdays = ['日', '月', '火', '水', '木', '金', '土'];
   const enWeekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const enMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function enOrdinal(n) {
+    const v = n % 100;
+    if (v >= 11 && v <= 13) return `${n}th`;
+    switch (n % 10) { case 1: return `${n}st`; case 2: return `${n}nd`; case 3: return `${n}rd`; default: return `${n}th`; }
+  }
 
   function formatJPDateParts(parts) {
     // parts: {year, month, day, weekday}
@@ -137,9 +142,9 @@
       const p = partsFromTs(ts, tz);
       return `${p.month}月${p.day}日(${jpWeekdays[p.weekday]})`;
     }
-    // EN desired form: Sep 11 (Thu)
+    // EN desired form: Sep 11th (Thu)
     const p = partsFromTs(ts, tz);
-    return `${enMonths[p.month - 1]} ${p.day} (${enWeekdays[p.weekday]})`;
+    return `${enMonths[p.month - 1]} ${enOrdinal(p.day)} (${enWeekdays[p.weekday]})`;
   }
 
   function sameLocalDay(tsA, tsB, tz) {
