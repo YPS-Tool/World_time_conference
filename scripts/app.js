@@ -1306,8 +1306,9 @@
     const wrap = document.getElementById('map-wrap');
     wrap.innerHTML = '';
     // Ensure local vendor libs are loaded
-    await ensureScript('/scripts/vendor/d3.min.js', 'd3');
-    await ensureScript('/scripts/vendor/topojson-client.min.js', 'topojson');
+    // Use relative paths so GitHub Pages under subdirectory works
+    await ensureScript('scripts/vendor/d3.min.js', 'd3');
+    await ensureScript('scripts/vendor/topojson-client.min.js', 'topojson');
     const width = wrap.clientWidth || 640;
     const height = wrap.clientHeight || 360;
 
