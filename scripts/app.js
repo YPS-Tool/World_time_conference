@@ -1120,7 +1120,7 @@
     const endTs = anchorUtc + block.selection.end * gran * 60000; // end-exclusive
     const lang = state.view.lang || 'ja';
     let header = block.name;
-    if (lang === 'en') { const m = /^候補(\d+)/.exec(block.name); if (m) header = `Candidate ${m[1]}`; }
+    if (lang === 'en') { const m = /^候補(\d+)/.exec(block.name); if (m) header = `Option ${m[1]}`; }
     let out = `${header}\n`;
     for (const c of state.cities) {
       const label = (lang === 'en')
