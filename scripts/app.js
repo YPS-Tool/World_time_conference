@@ -14,7 +14,7 @@
   };
 
   const MAX_BLOCKS = 5;
-  const DEFAULT_VIEW = { granularity: 60 };
+  const DEFAULT_VIEW = { granularity: 60, lang: 'ja' };
   const DAY_MIN = 1440;
 
   const els = {};
@@ -109,6 +109,28 @@
     return `${p.month}月${p.day}日(${jpWeekdays[p.weekday]}) ${pad2(p.hour)}:${pad2(p.minute)}`;
   }
 
+  // Localized output helpers (only for candidate text)
+  const localeMap = { ja: 'ja-JP', en: 'en-US', fr: 'fr-FR', zh: 'zh-CN' };
+  function formatOutDateTime(ts, tz, lang) {
+    if (lang === 'ja') return formatJP(ts, tz);
+    const locale = localeMap[lang] || 'en-US';
+    return new Intl.DateTimeFormat(locale, {
+      timeZone: tz,
+      hour12: false,
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    }).format(new Date(ts));
+  }
+  function formatOutTime(ts, tz, lang) {
+    if (lang === 'ja') { const p = partsFromTs(ts, tz); return `${pad2(p.hour)}:${pad2(p.minute)}`; }
+    const locale = localeMap[lang] || 'en-US';
+    return new Intl.DateTimeFormat(locale, {
+      timeZone: tz,
+      hour12: false,
+      hour: '2-digit', minute: '2-digit'
+    }).format(new Date(ts));
+  }
+
   function sameLocalDay(tsA, tsB, tz) {
     const a = partsFromTs(tsA, tz);
     const b = partsFromTs(tsB, tz);
@@ -128,7 +150,7 @@
   function loadPersisted() {
     try {
       const v = JSON.parse(localStorage.getItem(KEYS.view) || 'null');
-      if (v && (v.granularity === 15 || v.granularity === 30 || v.granularity === 60)) state.view = v;
+      if (v && typeof v === 'object') state.view = { ...DEFAULT_VIEW, ...v };
     } catch {}
     try {
       const c = JSON.parse(localStorage.getItem(KEYS.cities) || '[]');
@@ -1097,8 +1119,9 @@
     let out = `${block.name}\n`;
     for (const c of state.cities) {
       const label = c.isCurrent ? (datasetByTz(c.tzId)?.city_ja || tzSuffix(c.tzId)) : (c.city_ja || tzSuffix(c.tzId));
-      const startTxt = formatJP(startTs, c.tzId);
-      const endTxt = sameLocalDay(startTs, endTs, c.tzId) ? formatTimeHHmm(partsFromTs(endTs, c.tzId)) : formatJP(endTs, c.tzId);
+      const lang = state.view.lang || 'ja';
+      const startTxt = formatOutDateTime(startTs, c.tzId, lang);
+      const endTxt = sameLocalDay(startTs, endTs, c.tzId) ? formatOutTime(endTs, c.tzId, lang) : formatOutDateTime(endTs, c.tzId, lang);
       out += `・${label}: ${startTxt} 〜 ${endTxt}\n`;
     }
     return out.trim();
@@ -1219,10 +1242,15 @@
     // Left
     renderCurrentTZReco();
     renderCityList();
-    // Right segmented
-    document.querySelectorAll('.seg').forEach(btn => {
+    // Right segmented (granularity)
+    document.querySelectorAll('.seg[data-gran]').forEach(btn => {
       const g = Number(btn.dataset.gran);
       btn.setAttribute('aria-pressed', String(state.view.granularity === g));
+    });
+    // Language segmented (output only)
+    document.querySelectorAll('.seg-lang').forEach(btn => {
+      const lg = btn.dataset.lang;
+      btn.setAttribute('aria-pressed', String(state.view.lang === lg));
     });
     // Center
     renderBlocks();
@@ -1248,8 +1276,13 @@
         doSearch(q);
       }
     });
-    document.querySelectorAll('.seg').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.seg[data-gran]').forEach(btn => btn.addEventListener('click', () => {
       state.view.granularity = Number(btn.dataset.gran);
+      saveView();
+      render();
+    }));
+    document.querySelectorAll('.seg-lang').forEach(btn => btn.addEventListener('click', () => {
+      state.view.lang = btn.dataset.lang;
       saveView();
       render();
     }));
