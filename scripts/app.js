@@ -817,23 +817,24 @@
   }
 
   function addRowHours(container, tz, anchorUtc, hourWidth) {
-    // Label per UTC hour slot using the local hour at its midpoint.
-    // Handles DST transitions (repeat/skip hour) naturally.
-    let zeroPlaced = false;
-    for (let s = 0; s < 24; s++) {
-      const midTs = anchorUtc + (s + 0.5) * 60 * 60000;
-      const p = partsFromTs(midTs, tz);
+    // Place hour labels at each LOCAL hour's midpoint (hh:30) relative to the
+    // top anchor window. This makes half/quarter-hour zones align correctly.
+    const anchor = partsFromTs(anchorUtc, tz);
+    const anchorMin = anchor.hour * 60 + anchor.minute; // local minutes at anchor
+    for (let h = 0; h < 24; h++) {
+      const localMid = h * 60 + 30; // midpoint of local hour h
+      let leftMin = localMid - anchorMin;
+      leftMin = ((leftMin % 1440) + 1440) % 1440; // wrap into [0,1440)
       const d = document.createElement('div');
       d.className = 'h';
-      if (p.hour >= 22 || p.hour <= 5) d.classList.add('night');
-      if (!zeroPlaced && p.hour === 0) {
+      if (h >= 22 || h <= 5) d.classList.add('night');
+      if (h === 0) {
         d.classList.add('date');
         d.textContent = '';
-        zeroPlaced = true;
       } else {
-        d.textContent = `${p.hour}`;
+        d.textContent = `${h}`;
       }
-      d.style.left = `${s * hourWidth + (hourWidth / 2)}px`;
+      d.style.left = `${(leftMin / 60) * hourWidth}px`;
       container.appendChild(d);
     }
   }
