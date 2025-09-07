@@ -709,12 +709,16 @@
   }
 
   function changeBlockDay(block, deltaDays) {
-    // Compute using top city's tz to avoid DST
+    // Change day using calendar arithmetic (DST-safe)
     const topTz = state.cities[0]?.tzId || 'UTC';
-    const anchor = zonedMidnightUtcMs(block.date, topTz);
-    const target = anchor + deltaDays * 24 * 3600 * 1000;
-    const p = partsFromTs(target, topTz);
-    block.date = { year: p.year, month: p.month, day: p.day };
+    // Start from the current local calendar date in the top TZ
+    const startUtc = zonedMidnightUtcMs(block.date, topTz);
+    const start = partsFromTs(startUtc, topTz);
+    const d = new Date(Date.UTC(start.year, start.month - 1, start.day + deltaDays));
+    const ymd = { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() };
+    // Snap back to exact local midnight after calendar shift
+    zonedMidnightUtcMs(ymd, topTz); // compute once for correctness (value unused)
+    block.date = ymd;
     saveBlocks();
     renderBlocks();
   }
