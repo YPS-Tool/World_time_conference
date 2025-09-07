@@ -30,6 +30,8 @@
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
   const pad2 = (n) => String(n).padStart(2, '0');
   const jpWeekdays = ['日', '月', '火', '水', '木', '金', '土'];
+  const enWeekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const enMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   function formatJPDateParts(parts) {
     // parts: {year, month, day, weekday}
@@ -129,6 +131,15 @@
       hour12: false,
       hour: '2-digit', minute: '2-digit'
     }).format(new Date(ts));
+  }
+  function formatOutDateOnly(ts, tz, lang) {
+    if (lang === 'ja') {
+      const p = partsFromTs(ts, tz);
+      return `${p.month}月${p.day}日(${jpWeekdays[p.weekday]})`;
+    }
+    // EN desired form: Sep 11 (Thu)
+    const p = partsFromTs(ts, tz);
+    return `${enMonths[p.month - 1]} ${p.day} (${enWeekdays[p.weekday]})`;
   }
 
   function sameLocalDay(tsA, tsB, tz) {
@@ -1126,9 +1137,23 @@
       const label = (lang === 'en')
         ? (c.isCurrent ? (datasetByTz(c.tzId)?.city_en || 'Current Location') : (c.city_en || tzSuffix(c.tzId)))
         : (c.isCurrent ? (datasetByTz(c.tzId)?.city_ja || tzSuffix(c.tzId)) : (c.city_ja || tzSuffix(c.tzId)));
-      const startTxt = formatOutDateTime(startTs, c.tzId, lang);
-      const endTxt = sameLocalDay(startTs, endTs, c.tzId) ? formatOutTime(endTs, c.tzId, lang) : formatOutDateTime(endTs, c.tzId, lang);
-      out += `・${label}: ${startTxt} 〜 ${endTxt}\n`;
+      const bullet = lang === 'en' ? '•' : '・';
+      if (lang === 'en') {
+        const dateStart = formatOutDateOnly(startTs, c.tzId, lang);
+        const timeStart = formatOutTime(startTs, c.tzId, lang);
+        if (sameLocalDay(startTs, endTs, c.tzId)) {
+          const timeEnd = formatOutTime(endTs, c.tzId, lang);
+          out += `${bullet} ${label}: ${dateStart}, ${timeStart}–${timeEnd}\n`;
+        } else {
+          const dateEnd = formatOutDateOnly(endTs, c.tzId, lang);
+          const timeEnd = formatOutTime(endTs, c.tzId, lang);
+          out += `${bullet} ${label}: ${dateStart}, ${timeStart}–${dateEnd}, ${timeEnd}\n`;
+        }
+      } else {
+        const startTxt = formatOutDateTime(startTs, c.tzId, lang);
+        const endTxt = sameLocalDay(startTs, endTs, c.tzId) ? formatOutTime(endTs, c.tzId, lang) : formatOutDateTime(endTs, c.tzId, lang);
+        out += `${bullet}${label}: ${startTxt} 〜 ${endTxt}\n`;
+      }
     }
     return out.trim();
   }
