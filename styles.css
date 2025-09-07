@@ -101,6 +101,10 @@ body {
 .region { fill: #f8f3ef; stroke: color-mix(in oklab, var(--text), white 70%); stroke-width: 0.8; cursor: pointer; transition: fill .2s ease; }
 .region:hover, .region[aria-pressed="true"] { fill: color-mix(in oklab, var(--accent), white 70%); }
 .region-label { font-size: 11px; fill: var(--text-muted); pointer-events: none; }
+/* Remove default browser focus outline on SVG paths (black box) */
+.worldmap:focus { outline: none; }
+.worldmap .region:focus, .worldmap .region:focus-visible { outline: none; }
+.worldmap .region::-moz-focus-inner { border: 0; }
 
 /* Map controls */
 .map-ctl { position: absolute; top: 8px; right: 8px; display: inline-flex; gap: 6px; z-index: 5; }
