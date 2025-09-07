@@ -87,20 +87,35 @@
   }
 
   function zonedMidnightUtcMs(dateObj, tz) {
-    // dateObj: {year, month, day} in the timezone tz local calendar
-    // We find UTC ms such that formatting in tz is 00:00:00 of the given Y-M-D
-    const guess = Date.UTC(dateObj.year, dateObj.month - 1, dateObj.day, 0, 0, 0);
-    let ts = guess - tzOffsetMinutes(guess, tz) * 60000;
-    // iterate for DST edge cases
-    for (let i = 0; i < 2; i++) {
-      ts = ts - tzOffsetMinutes(ts, tz) * 60000 + tzOffsetMinutes(guess, tz) * 60000;
+    // Robustly find UTC ms for local tz midnight of the given Y-M-D
+    // Strategy: find a UTC timestamp that lies inside the target local day (use local-noon),
+    // then step back by the local time-of-day to reach 00:00, iterating to handle DST jumps.
+    const DAY_MS = 24 * 3600 * 1000;
+    const targetUtcYmd = Date.UTC(dateObj.year, dateObj.month - 1, dateObj.day);
+
+    // 1) Start from UTC noon to avoid edge cases near midnight
+    let ts = Date.UTC(dateObj.year, dateObj.month - 1, dateObj.day, 12, 0, 0);
+
+    // 2) Adjust by whole days until the local calendar date matches target
+    for (let i = 0; i < 3; i++) {
+      const p = partsFromTs(ts, tz);
+      const curUtcYmd = Date.UTC(p.year, p.month - 1, p.day);
+      if (curUtcYmd === targetUtcYmd) break;
+      const diffDays = Math.max(-1, Math.min(1, Math.round((targetUtcYmd - curUtcYmd) / DAY_MS)));
+      ts += diffDays * DAY_MS;
     }
-    // ensure parts match target 00:00 local
-    const parts = partsFromTs(ts, tz);
-    if (parts.hour !== 0 || parts.minute !== 0) {
-      // final correction
-      const diffMin = parts.hour * 60 + parts.minute;
-      ts -= diffMin * 60000;
+
+    // 3) Step back to local midnight; iterate to account for DST offset changes across the night
+    for (let i = 0; i < 3; i++) {
+      const p = partsFromTs(ts, tz);
+      const backMs = (p.hour * 3600 + p.minute * 60 + p.second) * 1000;
+      ts -= backMs;
+      const q = partsFromTs(ts, tz);
+      if (q.year === dateObj.year && q.month === dateObj.month && q.day === dateObj.day && q.hour === 0 && q.minute === 0) {
+        return ts;
+      }
+      // If we landed at 01:xx due to DST fallback or 23:xx previous day due to DST forward,
+      // the next iteration will correct it.
     }
     return ts;
   }
