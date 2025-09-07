@@ -1311,8 +1311,8 @@
     // Fit projection
     projection.fitExtent([[10, 10], [width - 10, height - 10]], { type: 'FeatureCollection', features });
 
-    svg.append('g')
-      .selectAll('path')
+    const g = svg.append('g').attr('class', 'map-layer');
+    g.selectAll('path')
       .data(features)
       .join('path')
       .attr('class', 'region')
@@ -1322,21 +1322,54 @@
       .append('title')
       .text(d => d.properties?.name || '');
 
+    // Zoom/pan
+    const zoom = d3.zoom().scaleExtent([1, 10]).on('zoom', (event) => {
+      g.attr('transform', event.transform);
+    });
+    svg.call(zoom);
+
+    function zoomToFeature(d) {
+      const b = path.bounds(d);
+      const dx = b[1][0] - b[0][0];
+      const dy = b[1][1] - b[0][1];
+      const cx = (b[0][0] + b[1][0]) / 2;
+      const cy = (b[0][1] + b[1][1]) / 2;
+      const scale = Math.max(1, Math.min(10, 0.9 / Math.max(dx / width, dy / height)));
+      const translate = [width / 2 - scale * cx, height / 2 - scale * cy];
+      svg.transition().duration(600).call(zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
+    }
+
     // Click interaction
-    svg.selectAll('path.region').on('click', function (event, d) {
+    g.selectAll('path.region').on('click', function (event, d) {
       const name = d.properties?.name || '';
-      svg.selectAll('path.region').attr('aria-pressed', null);
+      g.selectAll('path.region').attr('aria-pressed', null);
       d3.select(this).attr('aria-pressed', 'true');
       showCountryItems(name);
+      zoomToFeature(d);
     }).on('keydown', function (event, d) {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         const name = d.properties?.name || '';
-        svg.selectAll('path.region').attr('aria-pressed', null);
+        g.selectAll('path.region').attr('aria-pressed', null);
         d3.select(this).attr('aria-pressed', 'true');
         showCountryItems(name);
+        zoomToFeature(d);
       }
     });
+
+    // Controls (+/-/reset)
+    const ctl = document.createElement('div');
+    ctl.className = 'map-ctl';
+    ctl.innerHTML = `
+      <button class="map-btn" aria-label="ズームイン">＋</button>
+      <button class="map-btn" aria-label="ズームアウト">－</button>
+      <button class="map-btn" aria-label="リセット">リセット</button>
+    `;
+    wrap.appendChild(ctl);
+    const [btnIn, btnOut, btnReset] = ctl.querySelectorAll('button');
+    btnIn.addEventListener('click', () => svg.transition().duration(200).call(zoom.scaleBy, 1.3));
+    btnOut.addEventListener('click', () => svg.transition().duration(200).call(zoom.scaleBy, 1/1.3));
+    btnReset.addEventListener('click', () => svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity));
   }
 
   function highlightRegion(el) {

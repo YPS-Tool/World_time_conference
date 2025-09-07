@@ -96,11 +96,16 @@ body {
 .pane { margin-top: 6px; }
 
 /* Map */
-.map-wrap { border: 1px solid var(--outline); border-radius: 12px; overflow: hidden; background: #fff; margin-bottom: 8px; height: 360px; }
+.map-wrap { position: relative; border: 1px solid var(--outline); border-radius: 12px; overflow: hidden; background: #fff; margin-bottom: 8px; height: 360px; }
 .worldmap { width: 100%; height: 100%; display: block; background: linear-gradient(180deg, #fefaf7, #fff); }
 .region { fill: #f8f3ef; stroke: color-mix(in oklab, var(--text), white 70%); stroke-width: 0.8; cursor: pointer; transition: fill .2s ease; }
 .region:hover, .region[aria-pressed="true"] { fill: color-mix(in oklab, var(--accent), white 70%); }
 .region-label { font-size: 11px; fill: var(--text-muted); pointer-events: none; }
+
+/* Map controls */
+.map-ctl { position: absolute; top: 8px; right: 8px; display: inline-flex; gap: 6px; z-index: 5; }
+.map-btn { padding: 6px 10px; border-radius: 10px; border: 1px solid var(--outline); background: rgba(255,255,255,.9); cursor: pointer; }
+.map-btn:hover { background: #fff; }
 
 /* Left panel */
 .reco {
