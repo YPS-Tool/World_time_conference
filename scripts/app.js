@@ -422,13 +422,15 @@
       <div>
         <div class="block-title">${block.name}</div>
         <div class="week-strip">
-          ${['日','月','火','水','木','金','土'].map((d,i)=>`<button class="day" data-weekday="${i}"><span class="wd">${d}</span><span class="md" data-md></span></button>`).join('')}
+          ${['日','月','火','水','木','金','土'].map((d,i)=>`<button class=\"day\" data-weekday=\"${i}\"><span class=\"wd\">${d}</span><span class=\"md\" data-md></span></button>`).join('')}
         </div>
       </div>
       <div class="block-right">
         <button class="btn-icon" data-prev title="前日">◀</button>
-        <input type="date" class="input" data-date />
-        <span class="small-muted" data-wd></span>
+        <div class="date-field">
+          <input type="date" class="input" data-date />
+          <span class="date-overlay" data-date-label></span>
+        </div>
         <button class="btn-icon" data-next title="翌日">▶</button>
         <button class="btn-icon danger" data-del title="候補を削除">🗑</button>
       </div>
@@ -447,8 +449,13 @@
     // week indicator activation
     const weekBtns = header.querySelectorAll('.day');
     const anchorPartsTop = partsFromTs(anchorUtc, topTz);
-    const wdEl = header.querySelector('[data-wd]');
-    if (wdEl) wdEl.textContent = `(${jpWeekdays[anchorPartsTop.weekday]})`;
+    const dateOverlay = header.querySelector('[data-date-label]');
+    if (dateOverlay) {
+      const y = block.date.year;
+      const m = pad2(block.date.month);
+      const d = pad2(block.date.day);
+      dateOverlay.textContent = `${y}/${m}/${d} (${jpWeekdays[anchorPartsTop.weekday]})`;
+    }
     // Fill m/d for each weekday button based on topTz week
     const S_DAY = 24 * 3600 * 1000;
     const weekStartUtc = anchorUtc - anchorPartsTop.weekday * S_DAY; // Sunday 00:00 (topTz)
