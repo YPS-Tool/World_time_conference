@@ -491,6 +491,7 @@
       const round = document.createElement('div');
       round.className = 'round-layer';
       addRoundPill(round, c.tzId, anchorUtc, hourWidth);
+      addNightOverlay(round, c.tzId, anchorUtc, hourWidth);
       addDateChip(round, c.tzId, anchorUtc, hourWidth);
       inner.appendChild(round);
 
@@ -769,6 +770,42 @@
         el.style.borderBottomRightRadius = radius;
       }
       container.appendChild(el);
+    });
+  }
+
+  function addNightOverlay(container, tz, anchorUtc, hourWidth) {
+    const anchor = partsFromTs(anchorUtc, tz);
+    const anchorMin = anchor.hour * 60 + anchor.minute;
+    const radius = '14px';
+    const zero = '0px';
+    const intervals = [
+      { start: 22 * 60, len: 2 * 60 }, // 22:00 - 24:00
+      { start: 0, len: 6 * 60 },       // 00:00 - 06:00
+    ];
+    intervals.forEach(seg => {
+      const parts = makeWrappedRect(seg.start - anchorMin, seg.len);
+      parts.forEach(([l, w]) => {
+        const el = document.createElement('div');
+        el.className = 'night';
+        el.style.left = `${(l / 60) * hourWidth}px`;
+        el.style.width = `${(w / 60) * hourWidth}px`;
+        // Round if touching day edges so it fits inside the pill silhouette
+        if (l === 0) {
+          el.style.borderTopLeftRadius = radius;
+          el.style.borderBottomLeftRadius = radius;
+        } else {
+          el.style.borderTopLeftRadius = zero;
+          el.style.borderBottomLeftRadius = zero;
+        }
+        if (l + w === DAY_MIN) {
+          el.style.borderTopRightRadius = radius;
+          el.style.borderBottomRightRadius = radius;
+        } else {
+          el.style.borderTopRightRadius = zero;
+          el.style.borderBottomRightRadius = zero;
+        }
+        container.appendChild(el);
+      });
     });
   }
 
