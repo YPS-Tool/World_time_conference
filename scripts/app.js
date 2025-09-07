@@ -744,7 +744,8 @@
     // and round the outer ends: left at 0:00, right at 23:00.
     const anchor = partsFromTs(anchorUtc, tz);
     const anchorMin = anchor.hour * 60 + anchor.minute;
-    const parts = makeWrappedRect(0 - anchorMin, 23 * 60);
+    // Cover the entire local day so that hour 23 is included
+    const parts = makeWrappedRect(0 - anchorMin, 24 * 60);
     const radius = '14px';
     const zero = '0px';
     parts.forEach(([l, w], i) => {
