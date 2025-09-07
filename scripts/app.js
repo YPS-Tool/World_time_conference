@@ -1118,10 +1118,14 @@
     const gran = state.view.granularity;
     const startTs = anchorUtc + block.selection.start * gran * 60000;
     const endTs = anchorUtc + block.selection.end * gran * 60000; // end-exclusive
-    let out = `${block.name}\n`;
+    const lang = state.view.lang || 'ja';
+    let header = block.name;
+    if (lang === 'en') { const m = /^候補(\d+)/.exec(block.name); if (m) header = `Candidate ${m[1]}`; }
+    let out = `${header}\n`;
     for (const c of state.cities) {
-      const label = c.isCurrent ? (datasetByTz(c.tzId)?.city_ja || tzSuffix(c.tzId)) : (c.city_ja || tzSuffix(c.tzId));
-      const lang = state.view.lang || 'ja';
+      const label = (lang === 'en')
+        ? (c.isCurrent ? (datasetByTz(c.tzId)?.city_en || 'Current Location') : (c.city_en || tzSuffix(c.tzId)))
+        : (c.isCurrent ? (datasetByTz(c.tzId)?.city_ja || tzSuffix(c.tzId)) : (c.city_ja || tzSuffix(c.tzId)));
       const startTxt = formatOutDateTime(startTs, c.tzId, lang);
       const endTxt = sameLocalDay(startTs, endTs, c.tzId) ? formatOutTime(endTs, c.tzId, lang) : formatOutDateTime(endTs, c.tzId, lang);
       out += `・${label}: ${startTxt} 〜 ${endTxt}\n`;
