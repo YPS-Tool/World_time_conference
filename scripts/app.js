@@ -438,6 +438,14 @@
     wrap.appendChild(header);
     const dateInput = header.querySelector('[data-date]');
     dateInput.value = `${block.date.year}-${pad2(block.date.month)}-${pad2(block.date.day)}`;
+    // Open native date picker when clicking anywhere in the field
+    const dateField = header.querySelector('.date-field');
+    if (dateField) {
+      dateField.addEventListener('click', (e) => {
+        try { dateInput.showPicker && dateInput.showPicker(); } catch {}
+        dateInput.focus();
+      });
+    }
     header.querySelector('[data-prev]').addEventListener('click', () => changeBlockDay(block, -1));
     header.querySelector('[data-next]').addEventListener('click', () => changeBlockDay(block, +1));
     header.querySelector('[data-del]').addEventListener('click', () => deleteBlock(block.id));
