@@ -202,5 +202,5 @@ body {
 .row-hours .h { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 14px; font-weight: 600; color: color-mix(in oklab, var(--text), white 45%); font-variant-numeric: tabular-nums; }
 .row-hours .h.date { font-size: clamp(6px, calc(var(--hour-width, 80px) * 0.22), 11px); font-weight: 700; color: var(--text); line-height: 1.05; text-align: center; width: calc(var(--hour-width, 80px) - 6px); white-space: normal; background: transparent; border: none; padding: 0; box-shadow: none; }
 .vlines { position: absolute; inset: 0; pointer-events: none; }
-.vlines .v { position: absolute; top: 0; bottom: 0; border-left: 1px dashed var(--outline); }
+.vlines .v { position: absolute; top: 0; bottom: 0; border-left: none; }
 .vlines .v-day { border-left: 2px solid color-mix(in oklab, var(--text), white 50%); }
