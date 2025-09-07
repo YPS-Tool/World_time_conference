@@ -479,24 +479,26 @@
     const weekBtns = header.querySelectorAll('.day');
     const anchorPartsTop = partsFromTs(anchorUtc, topTz);
     const dateOverlay = header.querySelector('[data-date-label]');
+    // Day-of-week should be derived from the calendar date itself (timezone independent)
+    const curW = new Date(Date.UTC(block.date.year, block.date.month - 1, block.date.day)).getUTCDay();
     if (dateOverlay) {
       const y = block.date.year;
       const m = pad2(block.date.month);
       const d = pad2(block.date.day);
-      dateOverlay.textContent = `${y}/${m}/${d} (${jpWeekdays[anchorPartsTop.weekday]})`;
+      dateOverlay.textContent = `${y}/${m}/${d} (${jpWeekdays[curW]})`;
     }
-    // Fill m/d for each weekday button using calendar-day math (DST-safe)
+    // Fill m/d for each weekday button using calendar-day math from the block date (DST-safe)
     weekBtns.forEach((btn) => {
       const wd = Number(btn.dataset.weekday);
-      const delta = wd - anchorPartsTop.weekday; // [-6..+6]
-      const dUtc = new Date(Date.UTC(anchorPartsTop.year, anchorPartsTop.month - 1, anchorPartsTop.day + delta));
+      const delta = wd - curW; // [-6..+6]
+      const dUtc = new Date(Date.UTC(block.date.year, block.date.month - 1, block.date.day + delta));
       const ymd = { year: dUtc.getUTCFullYear(), month: dUtc.getUTCMonth() + 1, day: dUtc.getUTCDate() };
       const ts = zonedMidnightUtcMs(ymd, topTz);
       const p = partsFromTs(ts, topTz);
       const md = `${p.month}/${p.day}`;
       const mdSpan = btn.querySelector('[data-md]');
       if (mdSpan) mdSpan.textContent = md;
-      btn.classList.toggle('active', wd === anchorPartsTop.weekday);
+      btn.classList.toggle('active', wd === curW);
       btn.addEventListener('click', () => jumpToWeekday(block, wd));
     });
 
@@ -724,11 +726,9 @@
   }
 
   function jumpToWeekday(block, weekday) {
-    const topTz = state.cities[0]?.tzId || 'UTC';
-    const anchor = zonedMidnightUtcMs(block.date, topTz);
-    const p = partsFromTs(anchor, topTz);
-    // Move to the weekday within the same displayed week (allow past days)
-    const delta = weekday - p.weekday; // range [-6, +6]
+    // Move to the weekday within the same displayed week (calendar-based, DST-safe)
+    const curW = new Date(Date.UTC(block.date.year, block.date.month - 1, block.date.day)).getUTCDay();
+    const delta = weekday - curW; // [-6..+6]
     changeBlockDay(block, delta);
   }
 
