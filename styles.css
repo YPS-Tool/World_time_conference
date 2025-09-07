@@ -173,6 +173,13 @@ body {
 .sel-chip { position: absolute; transform: translate(-50%, -50%); background: rgba(255,255,255,.9); border: 1px solid var(--outline); border-radius: 12px; padding: 4px 8px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.08); white-space: nowrap; color: var(--text); }
 .sel-chip.hidden { display: none; }
 
+/* Round visual layer (middle layer) */
+.round-layer { position: absolute; inset: 4px 0; pointer-events: none; }
+.round-layer .pill { position: absolute; left: 0; right: 0; top: 4px; bottom: 4px; border-radius: 14px; background: color-mix(in oklab, var(--accent), white 82%); }
+.round-layer .date-chip { position: absolute; transform: translate(-50%, -50%); top: 50%; padding: 2px 6px; border-radius: 10px; background: color-mix(in oklab, var(--primary), white 85%); border: none; font-size: clamp(7px, calc(var(--hour-width, 80px) * 0.28), 12px); line-height: 1.05; color: var(--text); text-align: center; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+.round-layer .date-chip .d1 { display: block; }
+.round-layer .date-chip .d2 { display: block; font-weight: 600; color: color-mix(in oklab, var(--text), white 20%); }
+
 /* Now line */
 .now-line { position: absolute; top: 0; bottom: 0; width: 2px; background: #e25544; box-shadow: 0 0 0 1px rgba(226,85,68,.2); pointer-events: none; }
 
@@ -193,16 +200,7 @@ body {
 /* Per-row hour labels and vertical lines */
 .row-hours { position: absolute; inset: 0; pointer-events: none; }
 .row-hours .h { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 14px; font-weight: 600; color: color-mix(in oklab, var(--text), white 45%); font-variant-numeric: tabular-nums; }
-.row-hours .h.date { 
-  font-size: clamp(6px, calc(var(--hour-width, 80px) * 0.24), 12px);
-  font-weight: 700; 
-  color: var(--text); 
-  line-height: 1.05; 
-  text-align: center; 
-  width: calc(var(--hour-width, 80px) - 6px);
-  white-space: normal;
-}
-.row-hours .h.date .d1 { display: block; }
-.row-hours .h.date .d2 { display: block; font-weight: 600; color: color-mix(in oklab, var(--text), white 20%); }
+.row-hours .h.date { font-size: clamp(6px, calc(var(--hour-width, 80px) * 0.22), 11px); font-weight: 700; color: var(--text); line-height: 1.05; text-align: center; width: calc(var(--hour-width, 80px) - 6px); white-space: normal; background: transparent; border: none; padding: 0; box-shadow: none; }
 .vlines { position: absolute; inset: 0; pointer-events: none; }
 .vlines .v { position: absolute; top: 0; bottom: 0; border-left: 1px dashed var(--outline); }
+.vlines .v-day { border-left: 2px solid color-mix(in oklab, var(--text), white 50%); }

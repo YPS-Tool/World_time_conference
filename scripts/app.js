@@ -487,6 +487,15 @@
       addDayparts(dp, c.tzId, anchorUtc, hourWidth);
       inner.appendChild(dp);
 
+      // rounded visual layer (middle)
+      const round = document.createElement('div');
+      round.className = 'round-layer';
+      const pill = document.createElement('div');
+      pill.className = 'pill';
+      round.appendChild(pill);
+      addDateChip(round, c.tzId, anchorUtc, hourWidth);
+      inner.appendChild(round);
+
       // per-row hour labels
       const rh = document.createElement('div');
       rh.className = 'row-hours';
@@ -703,12 +712,9 @@
         const d = document.createElement('div');
         d.className = 'h';
         if (h === 0 && !zeroPlaced) {
-          const ts = anchorUtc + l * 60000; // start of the local 0:00 block
-          const p = partsFromTs(ts, tz);
-          const dateTxt = `${p.month}/${p.day}`; // m/d
-          const wTxt = `(${jpWeekdays[p.weekday]})`;
-          d.innerHTML = `<span class="d1">${dateTxt}</span><br><span class="d2">${wTxt}</span>`;
+          // zero cell shows date chip on middle layer; numbers layer leaves empty slot
           d.classList.add('date');
+          d.textContent = '';
           zeroPlaced = true;
         } else {
           d.textContent = `${h}`;
@@ -719,10 +725,25 @@
     }
   }
 
+  function addDateChip(container, tz, anchorUtc, hourWidth) {
+    const anchor = partsFromTs(anchorUtc, tz);
+    const anchorMin = anchor.hour * 60 + anchor.minute;
+    const parts = makeWrappedRect(0 - anchorMin, 60);
+    for (const [l, w] of parts) {
+      const ts = anchorUtc + l * 60000;
+      const p = partsFromTs(ts, tz);
+      const chip = document.createElement('div');
+      chip.className = 'date-chip';
+      chip.innerHTML = `<span class="d1">${p.month}/${p.day}</span><span class="d2">(${jpWeekdays[p.weekday]})</span>`;
+      chip.style.left = `${(l / 60) * hourWidth + (hourWidth / 2)}px`;
+      container.appendChild(chip);
+    }
+  }
+
   function addVLines(container, hourWidth) {
     for (let h = 0; h <= 24; h++) {
       const v = document.createElement('div');
-      v.className = 'v';
+      v.className = 'v' + (h % 24 === 0 ? ' v-day' : '');
       v.style.left = `${h * hourWidth}px`;
       container.appendChild(v);
     }
