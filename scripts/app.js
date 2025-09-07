@@ -789,19 +789,21 @@
       el.style.left = `${(l / 60) * hourWidth}px`;
       el.style.width = `${(w / 60) * hourWidth}px`;
       if (parts.length === 1) {
-        // both ends rounded (default border-radius applies)
+        // single piece: midnight aligns with viewport; both ends rounded
       } else if (i === 0) {
-        // first segment: round start (left), square end (right)
-        el.style.borderTopLeftRadius = radius;
-        el.style.borderBottomLeftRadius = radius;
-        el.style.borderTopRightRadius = zero;
-        el.style.borderBottomRightRadius = zero;
-      } else {
-        // second segment: square start (left), round end (right)
+        // wrapping: first piece is left fragment ending at local 24:00 (seam at right)
+        // → seam側（右）を丸め、外側（左）は角を落とす
         el.style.borderTopLeftRadius = zero;
         el.style.borderBottomLeftRadius = zero;
         el.style.borderTopRightRadius = radius;
         el.style.borderBottomRightRadius = radius;
+      } else {
+        // second piece is right fragment starting at local 00:00 (seam at left)
+        // → seam側（左）を丸め、外側（右）は角を落とす
+        el.style.borderTopLeftRadius = radius;
+        el.style.borderBottomLeftRadius = radius;
+        el.style.borderTopRightRadius = zero;
+        el.style.borderBottomRightRadius = zero;
       }
       container.appendChild(el);
     });
