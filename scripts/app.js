@@ -87,37 +87,21 @@
   }
 
   function zonedMidnightUtcMs(dateObj, tz) {
-    // Robustly find UTC ms for local tz midnight of the given Y-M-D
-    // Strategy: find a UTC timestamp that lies inside the target local day (use local-noon),
-    // then step back by the local time-of-day to reach 00:00, iterating to handle DST jumps.
+    // Find UTC timestamp whose formatting in tz is exactly Y-M-D 00:00:00.
+    // Robust implementation using a bounded minute-scan around the target day.
     const DAY_MS = 24 * 3600 * 1000;
-    const targetUtcYmd = Date.UTC(dateObj.year, dateObj.month - 1, dateObj.day);
-
-    // 1) Start from UTC noon to avoid edge cases near midnight
-    let ts = Date.UTC(dateObj.year, dateObj.month - 1, dateObj.day, 12, 0, 0);
-
-    // 2) Adjust by whole days until the local calendar date matches target
-    for (let i = 0; i < 3; i++) {
+    const center = Date.UTC(dateObj.year, dateObj.month - 1, dateObj.day, 12, 0, 0);
+    const start = center - 36 * 3600 * 1000; // -36h window
+    const end = center + 36 * 3600 * 1000;   // +36h window
+    for (let ts = start; ts <= end; ts += 60000) {
       const p = partsFromTs(ts, tz);
-      const curUtcYmd = Date.UTC(p.year, p.month - 1, p.day);
-      if (curUtcYmd === targetUtcYmd) break;
-      const diffDays = Math.max(-1, Math.min(1, Math.round((targetUtcYmd - curUtcYmd) / DAY_MS)));
-      ts += diffDays * DAY_MS;
-    }
-
-    // 3) Step back to local midnight; iterate to account for DST offset changes across the night
-    for (let i = 0; i < 3; i++) {
-      const p = partsFromTs(ts, tz);
-      const backMs = (p.hour * 3600 + p.minute * 60 + p.second) * 1000;
-      ts -= backMs;
-      const q = partsFromTs(ts, tz);
-      if (q.year === dateObj.year && q.month === dateObj.month && q.day === dateObj.day && q.hour === 0 && q.minute === 0) {
+      if (p.year === dateObj.year && p.month === dateObj.month && p.day === dateObj.day && p.hour === 0 && p.minute === 0) {
         return ts;
       }
-      // If we landed at 01:xx due to DST fallback or 23:xx previous day due to DST forward,
-      // the next iteration will correct it.
     }
-    return ts;
+    // Fallback: if not found (shouldn't happen), approximate via offset method
+    const guess = Date.UTC(dateObj.year, dateObj.month - 1, dateObj.day, 0, 0, 0);
+    return guess - tzOffsetMinutes(guess, tz) * 60000;
   }
 
   function formatJP(ts, tz) {
@@ -493,9 +477,8 @@
       const delta = wd - curW; // [-6..+6]
       const dUtc = new Date(Date.UTC(block.date.year, block.date.month - 1, block.date.day + delta));
       const ymd = { year: dUtc.getUTCFullYear(), month: dUtc.getUTCMonth() + 1, day: dUtc.getUTCDate() };
-      const ts = zonedMidnightUtcMs(ymd, topTz);
-      const p = partsFromTs(ts, topTz);
-      const md = `${p.month}/${p.day}`;
+      // Week strip is a calendar view; use pure calendar date for m/d to avoid TZ/DST shifts
+      const md = `${ymd.month}/${ymd.day}`;
       const mdSpan = btn.querySelector('[data-md]');
       if (mdSpan) mdSpan.textContent = md;
       btn.classList.toggle('active', wd === curW);
