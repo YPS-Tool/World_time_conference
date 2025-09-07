@@ -1276,6 +1276,14 @@
     detectCurrentTZ();
     loadPersisted();
     await loadDataset();
+    // Auto-add current timezone on first visit (when no saved cities)
+    try {
+      if (state.cities.length === 0 && state.currentTZ) {
+        const rep = datasetByTz(state.currentTZ);
+        const city = rep ? { ...rep } : { id: 'current', tzId: state.currentTZ, city_ja: '現在地', city_en: 'Current Location', country_ja: '', country_en: '', aliases: [], isCurrent: true };
+        addCity(city);
+      }
+    } catch {}
     ensureAtLeastOneBlock();
     bindEvents();
     render();
