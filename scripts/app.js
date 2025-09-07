@@ -601,6 +601,7 @@
       const round = document.createElement('div');
       round.className = 'round-layer';
       addRoundPill(round, c.tzId, anchorUtc, hourWidth);
+      addPillHourLines(round, c.tzId, anchorUtc, hourWidth);
       addNightOverlay(round, c.tzId, anchorUtc, hourWidth);
       addEarlyOverlay(round, c.tzId, anchorUtc, hourWidth);
       addEveningOverlay(round, c.tzId, anchorUtc, hourWidth);
@@ -885,6 +886,34 @@
         el.style.borderBottomRightRadius = radius;
       }
       container.appendChild(el);
+    });
+  }
+
+  function addPillHourLines(container, tz, anchorUtc, hourWidth) {
+    // Draw dashed hour boundaries inside each rounded pill segment only.
+    const anchor = partsFromTs(anchorUtc, tz);
+    const anchorMin = anchor.hour * 60 + anchor.minute; // local minutes at anchor
+    const pills = Array.from(container.querySelectorAll('.pill'));
+    if (!pills.length) return;
+    // Precompute global x position for each local hour boundary (1..23)
+    const xs = [];
+    for (let h = 1; h < 24; h++) {
+      let leftMin = h * 60 - anchorMin;
+      leftMin = ((leftMin % 1440) + 1440) % 1440; // wrap
+      xs.push((leftMin / 60) * hourWidth);
+    }
+    pills.forEach(p => {
+      const pLeft = parseFloat(p.style.left) || 0;
+      const pWidth = parseFloat(p.style.width) || 0;
+      const pRight = pLeft + pWidth;
+      xs.forEach(x => {
+        if (x > pLeft + 0.5 && x < pRight - 0.5) {
+          const line = document.createElement('div');
+          line.className = 'ph';
+          line.style.left = `${x - pLeft}px`;
+          p.appendChild(line);
+        }
+      });
     });
   }
 

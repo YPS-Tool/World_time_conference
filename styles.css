@@ -193,6 +193,7 @@ body {
 /* Round visual layer (middle layer) */
 .round-layer { position: absolute; inset: 4px 0; pointer-events: none; }
 .round-layer .pill { position: absolute; top: 4px; bottom: 4px; border-radius: 14px; background: color-mix(in oklab, var(--accent), white 82%); z-index: 0; overflow: hidden; }
+.round-layer .pill .ph { position: absolute; top: 0; bottom: 0; border-left: 1px dashed color-mix(in oklab, var(--text), white 70%); z-index: 2; }
 .round-layer .night { position: absolute; top: 0; bottom: 0; background: color-mix(in oklab, var(--text), white 40%); opacity: 0.35; border-radius: 0; z-index: 1; }
 .round-layer .early { position: absolute; top: 0; bottom: 0; background: color-mix(in oklab, var(--text), white 60%); opacity: 0.22; border-radius: 0; z-index: 1; }
 .round-layer .evening { position: absolute; top: 0; bottom: 0; background: color-mix(in oklab, var(--text), white 55%); opacity: 0.22; border-radius: 0; z-index: 1; }
@@ -223,5 +224,5 @@ body {
 .row-hours .h.night { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.35); }
 .row-hours .h.date { font-size: clamp(6px, calc(var(--hour-width, 80px) * 0.22), 11px); font-weight: 700; color: var(--text); line-height: 1.05; text-align: center; width: calc(var(--hour-width, 80px) - 6px); white-space: normal; background: transparent; border: none; padding: 0; box-shadow: none; }
 .vlines { position: absolute; inset: 0; pointer-events: none; }
-.vlines .v { position: absolute; top: 0; bottom: 0; border-left: 1px dashed color-mix(in oklab, var(--text), white 75%); }
+.vlines .v { position: absolute; top: 0; bottom: 0; border-left: none; }
 .vlines .v-day { border-left: 2px solid color-mix(in oklab, var(--text), white 50%); }
