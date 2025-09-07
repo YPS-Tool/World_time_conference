@@ -120,11 +120,11 @@ body {
 .seg[aria-pressed="true"] { background: var(--primary); color: white; border-color: color-mix(in oklab, var(--primary), black 10%); }
 
 /* Date input with overlay text (yyyy/mm/dd (曜)) */
-.date-field { position: relative; display: inline-block; }
-.date-field .input { padding-right: 36px; }
+.date-field { position: relative; display: inline-block; min-width: 220px; width: 240px; }
+.date-field .input { padding-right: 44px; }
 .date-field input[type="date"] { color: transparent; caret-color: transparent; }
 .date-field input[type="date"]::-webkit-datetime-edit { color: transparent; }
-.date-field .date-overlay { position: absolute; left: 12px; right: 36px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.date-field .date-overlay { position: absolute; left: 12px; right: 44px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Modal */
 .modal { position: fixed; inset: 0; display: grid; place-items: center; z-index: 1000; }
