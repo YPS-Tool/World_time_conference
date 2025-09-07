@@ -158,11 +158,11 @@ body {
 
 /* Background dayparts blocks per row */
 .dayparts { position: absolute; inset: 0; pointer-events: none; }
-.daypart { position: absolute; top: 0; bottom: 0; opacity: 0.55; }
-.dp-night { background: color-mix(in oklab, var(--primary), white 80%); }
-.dp-early { background: color-mix(in oklab, var(--accent), white 75%); }
-.dp-day { background: color-mix(in oklab, var(--accent), white 60%); }
-.dp-evening { background: color-mix(in oklab, var(--primary), white 70%); }
+.daypart { position: absolute; top: 0; bottom: 0; opacity: 0; background: transparent; }
+.dp-night { background: transparent; }
+.dp-early { background: transparent; }
+.dp-day { background: transparent; }
+.dp-evening { background: transparent; }
 
 /* Selection overlay */
 .selection { position: absolute; top: 0; bottom: 0; border-left: 2px solid var(--primary); border-right: 2px solid var(--primary); background: transparent; border-radius: 8px; box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary), black 10%); }
@@ -195,7 +195,7 @@ body {
 
 /* Consensus overlay across all rows (meeting friendliness) */
 .consensus { position: absolute; inset: 0; pointer-events: none; }
-.consensus .cs-slot { position: absolute; top: 0; bottom: 0; background: var(--accent); opacity: var(--alpha, 0.06); border-radius: 4px; }
+.consensus .cs-slot { position: absolute; top: 0; bottom: 0; background: transparent; opacity: 0; border-radius: 4px; }
 
 /* Per-row hour labels and vertical lines */
 .row-hours { position: absolute; inset: 0; pointer-events: none; }
