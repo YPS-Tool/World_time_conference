@@ -172,6 +172,8 @@
     }
     // Augment with the full IANA timezone list so we have 300+ candidates
     try { augmentWithIanaTimezones(); } catch (e) { console.warn('augmentWithIanaTimezones failed', e); }
+    // Build search index once dataset is ready
+    try { buildSearchIndex(); } catch (e) { console.warn('buildSearchIndex failed', e); }
   }
 
   function detectCurrentTZ() {
@@ -218,16 +220,45 @@
     }
   }
 
-  // ------ Search ranking ------
+  // ------ Multilingual search index ------
+  // Normalize to ASCII-friendly base (diacritics removed, spacing unified)
   function normalize(str) {
     return (str || '')
       .toString()
+      .normalize('NFKC')
       .toLowerCase()
       .normalize('NFKD')
       .replace(/[\u0300-\u036f]/g, '') // strip diacritics
+      .replace(/[\u2010-\u2015\u2212\uFF0D]/g, '-') // dashes
+      .replace(/[\u3000]/g, ' ') // ideographic space -> normal space
       .replace(/[_\s]+/g, ' ') // unify separators
       .trim();
   }
+
+  // Convert katakana -> hiragana (keep hiragana), drop prolonged sound mark
+  function toHiragana(s) {
+    let out = '';
+    for (const ch of (s || '')) {
+      const code = ch.codePointAt(0);
+      if (code >= 0x30A1 && code <= 0x30F6) {
+        out += String.fromCodePoint(code - 0x60); // カタカナ -> ひらがな
+      } else if (ch === 'ー') {
+        // Skip long sound mark for lenient matching
+      } else {
+        out += ch;
+      }
+    }
+    return out;
+  }
+  function normalizeKana(str) {
+    return normalize(toHiragana(str))
+      .replace(/[\u3099\u309A]/g, '') // remove combining marks for kana
+      .replace(/[^\p{sc=Hiragana}a-z0-9\s/-]+/giu, ' ') // strip symbols but keep ascii for mix
+      .replace(/\s+/g, ' ') // collapse spaces
+      .trim();
+  }
+
+  function hasKana(s) { return /[\u3041-\u3096\u30A1-\u30FA]/.test(s || ''); }
 
   function tokenize(q) {
     const n = normalize(q);
@@ -235,26 +266,75 @@
     return n.split(/\s+/).filter(Boolean);
   }
 
-  function scoreItem(it, tokens) {
-    if (tokens.length === 0) return 0;
-    const cj = normalize(it.city_ja);
-    const ce = normalize(it.city_en);
-    const kj = normalize(it.country_ja);
-    const ke = normalize(it.country_en);
-    const tz = normalize(it.tzId);
-    const als = (it.aliases || []).map(normalize);
+  // Lightweight Levenshtein for fuzzy matching small tokens
+  function levenshtein(a, b) {
+    if (a === b) return 0;
+    const m = a.length, n = b.length;
+    if (m === 0) return n; if (n === 0) return m;
+    const dp = new Array(n + 1);
+    for (let j = 0; j <= n; j++) dp[j] = j;
+    for (let i = 1; i <= m; i++) {
+      let prev = i - 1;
+      dp[0] = i;
+      for (let j = 1; j <= n; j++) {
+        const tmp = dp[j];
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[j] = Math.min(
+          dp[j] + 1,        // deletion
+          dp[j - 1] + 1,    // insertion
+          prev + cost       // substitution
+        );
+        prev = tmp;
+      }
+    }
+    return dp[n];
+  }
+
+  // Build per-item search index for fast matching
+  function buildIndexForItem(it) {
+    const fields = [it.city_ja, it.city_en, it.country_ja, it.country_en, it.tzId, ...(it.aliases || [])];
+    const base = normalize(fields.join(' '));
+    const kana = normalizeKana(fields.join(' '));
+    // Token sets for fuzzy
+    const baseTokens = new Set(base.split(/\s+|\//g).filter(Boolean));
+    const kanaTokens = new Set(kana.split(/\s+|\//g).filter(Boolean));
+    return { base, kana, baseTokens, kanaTokens };
+  }
+
+  let searchIndex = null; // Map id -> index
+  function buildSearchIndex() {
+    searchIndex = new Map();
+    for (const it of state.dataset) searchIndex.set(it.id, buildIndexForItem(it));
+  }
+
+  function scoreItem(it, tokens, kanaTokens) {
+    if (!searchIndex) buildSearchIndex();
+    const idx = searchIndex.get(it.id);
+    if (!idx) return 0;
     let score = 0;
     for (const t of tokens) {
-      // city
-      if (cj.startsWith(t)) score += 12; else if (cj.includes(t)) score += 8;
-      if (ce.startsWith(t)) score += 10; else if (ce.includes(t)) score += 7;
-      // country
-      if (kj.startsWith(t)) score += 6; else if (kj.includes(t)) score += 4;
-      if (ke.startsWith(t)) score += 5; else if (ke.includes(t)) score += 3;
-      // aliases
-      if (als.some(a => a.startsWith(t))) score += 5; else if (als.some(a => a.includes(t))) score += 3;
-      // tzid
-      if (tz.includes(t)) score += 1;
+      // Strong priority on city/country prefix matches (base)
+      if (idx.base.startsWith(t)) score += 15;
+      if (idx.baseTokens.has(t)) score += 12;
+      if (idx.base.includes(' ' + t)) score += 10; else if (idx.base.includes(t)) score += 6;
+    }
+    for (const kt of kanaTokens) {
+      if (!kt) continue;
+      if (idx.kana.startsWith(kt)) score += 14;
+      if (idx.kanaTokens.has(kt)) score += 11;
+      if (idx.kana.includes(' ' + kt)) score += 9; else if (idx.kana.includes(kt)) score += 5;
+    }
+    // Fuzzy boost for short tokens when nothing else matched well
+    if (score < 10) {
+      const candidates = Array.from(idx.baseTokens).filter(w => w.length >= 3 && w.length <= 12);
+      for (const t of tokens) {
+        let best = Infinity;
+        for (const w of candidates) {
+          const d = levenshtein(t, w);
+          if (d < best) best = d;
+        }
+        if (best <= 1) score += 6; else if (best === 2) score += 3;
+      }
     }
     if (it.isCurated) score += 3; // curated boost
     return score;
@@ -1032,10 +1112,11 @@
     const list = document.getElementById('search-results');
     list.innerHTML = '';
     const tokens = tokenize(q);
+    const kanaTokens = hasKana(q) ? normalizeKana(q).split(/\s+/).filter(Boolean) : [];
     let items = [];
     if (tokens.length) {
       items = state.dataset
-        .map(it => ({ it, score: scoreItem(it, tokens) }))
+        .map(it => ({ it, score: scoreItem(it, tokens, kanaTokens) }))
         .filter(x => x.score > 0)
         .sort((a, b) => b.score - a.score || Number(b.it.isCurated) - Number(a.it.isCurated) || normalize(a.it.city_ja).localeCompare(normalize(b.it.city_ja)))
         .slice(0, 10)
@@ -1045,6 +1126,8 @@
     for (const it of items) {
       const li = document.createElement('li');
       li.className = 'search-item';
+      li.setAttribute('role', 'button');
+      li.setAttribute('tabindex', '0');
       li.innerHTML = `
         <div>
           <div><strong>${it.city_ja}</strong>（${it.country_ja}）</div>
@@ -1052,7 +1135,18 @@
         </div>
         <div><button class="btn btn-primary">追加</button></div>
       `;
-      li.querySelector('button').addEventListener('click', () => { addCity(it); closeSearch(); });
+      // Whole row click adds the city
+      const add = () => { addCity(it); closeSearch(); };
+      li.addEventListener('click', (e) => {
+        // allow button click to work; stop double-fire
+        if (e.target instanceof HTMLElement && e.target.closest('button')) return;
+        add();
+      });
+      li.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); add(); }
+      });
+      // Keep the explicit button too
+      li.querySelector('button').addEventListener('click', (e) => { e.stopPropagation(); add(); });
       list.appendChild(li);
     }
   }
