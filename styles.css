@@ -149,6 +149,7 @@ body {
 .btn-icon { width: 32px; height: 32px; display: inline-grid; place-items: center; border-radius: 8px; border: 1px solid var(--outline); background: var(--surface); cursor: pointer; color: var(--text); }
 .btn-icon:hover { background: color-mix(in oklab, var(--surface), white 40%); }
 .btn-icon.danger { color: #7a2a2a; border-color: color-mix(in oklab, var(--primary), black 10%); background: color-mix(in oklab, var(--primary), white 70%); }
+.btn.danger { color: #7a2a2a; border-color: color-mix(in oklab, var(--primary), black 10%); background: color-mix(in oklab, var(--primary), white 70%); }
 
 .week-strip { display: inline-flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
 .week-strip .day { display: grid; place-items: center; gap: 2px; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--outline); background: var(--surface); cursor: pointer; font-size: 12px; line-height: 1.1; }

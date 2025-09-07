@@ -431,7 +431,7 @@
           <span class="date-overlay" data-date-label></span>
         </div>
         <button class="btn-icon" data-next title="翌日">▶</button>
-        <button class="btn-icon danger" data-del title="候補を削除">🗑</button>
+        <button class="btn danger" data-del title="候補を削除">候補を削除</button>
       </div>
     `;
     wrap.appendChild(header);
