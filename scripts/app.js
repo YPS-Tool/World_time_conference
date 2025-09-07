@@ -686,7 +686,8 @@
     const topTz = state.cities[0]?.tzId || 'UTC';
     const anchor = zonedMidnightUtcMs(block.date, topTz);
     const p = partsFromTs(anchor, topTz);
-    const delta = (weekday - p.weekday + 7) % 7;
+    // Move to the weekday within the same displayed week (allow past days)
+    const delta = weekday - p.weekday; // range [-6, +6]
     changeBlockDay(block, delta);
   }
 
