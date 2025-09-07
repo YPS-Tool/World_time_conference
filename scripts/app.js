@@ -851,7 +851,8 @@
     // Render evening band (18:00-21:00) clipped inside pill segments.
     const anchor = partsFromTs(anchorUtc, tz);
     const anchorMin = anchor.hour * 60 + anchor.minute;
-    const intervals = [ { start: 18 * 60, len: 3 * 60 } ];
+    // Cover 18:00 - 22:00 so that 21時台も含む
+    const intervals = [ { start: 18 * 60, len: 4 * 60 } ];
 
     const segPixels = [];
     intervals.forEach(seg => {
