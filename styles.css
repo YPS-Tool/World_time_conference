@@ -205,7 +205,7 @@ body {
 .outputs-card pre { margin: 8px 0 0; }
 
 /* Hover guide line */
-.hover-line { position: absolute; top: 0; bottom: 0; width: 1px; background: transparent; border-left: 1px dashed color-mix(in oklab, var(--text), white 60%); pointer-events: none; }
+.hover-line { position: absolute; top: 0; bottom: 0; width: 1px; background: transparent; border-left: none; pointer-events: none; }
 
 /* Consensus overlay across all rows (meeting friendliness) */
 .consensus { position: absolute; inset: 0; pointer-events: none; }
