@@ -140,7 +140,9 @@ body {
 .btn-icon.danger { color: #7a2a2a; border-color: color-mix(in oklab, var(--primary), black 10%); background: color-mix(in oklab, var(--primary), white 70%); }
 
 .week-strip { display: inline-flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
-.week-strip .day { padding: 6px 8px; border-radius: 10px; border: 1px solid var(--outline); background: var(--surface); cursor: pointer; font-size: 12px; }
+.week-strip .day { display: grid; place-items: center; gap: 2px; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--outline); background: var(--surface); cursor: pointer; font-size: 12px; line-height: 1.1; }
+.week-strip .day .md { font-size: 11px; color: var(--text-muted); }
+.week-strip .day.active .md { color: inherit; font-weight: 600; }
 .week-strip .day.active { background: var(--accent); color: #2e2323; border-color: color-mix(in oklab, var(--accent), black 10%); }
 
 .grid-wrap { position: relative; overflow-x: auto; border: 1px solid var(--outline); border-radius: 12px; background: var(--surface); touch-action: none; user-select: none; }

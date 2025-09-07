@@ -422,7 +422,7 @@
       <div>
         <div class="block-title">${block.name}</div>
         <div class="week-strip">
-          ${['日','月','火','水','木','金','土'].map((d,i)=>`<button class="day" data-weekday="${i}">${d}</button>`).join('')}
+          ${['日','月','火','水','木','金','土'].map((d,i)=>`<button class="day" data-weekday="${i}"><span class="wd">${d}</span><span class="md" data-md></span></button>`).join('')}
         </div>
       </div>
       <div class="block-right">
@@ -449,8 +449,16 @@
     const anchorPartsTop = partsFromTs(anchorUtc, topTz);
     const wdEl = header.querySelector('[data-wd]');
     if (wdEl) wdEl.textContent = `(${jpWeekdays[anchorPartsTop.weekday]})`;
-    weekBtns.forEach(btn => {
+    // Fill m/d for each weekday button based on topTz week
+    const S_DAY = 24 * 3600 * 1000;
+    const weekStartUtc = anchorUtc - anchorPartsTop.weekday * S_DAY; // Sunday 00:00 (topTz)
+    weekBtns.forEach((btn, i) => {
       const wd = Number(btn.dataset.weekday);
+      const ts = weekStartUtc + wd * S_DAY;
+      const p = partsFromTs(ts, topTz);
+      const md = `${p.month}/${p.day}`;
+      const mdSpan = btn.querySelector('[data-md]');
+      if (mdSpan) mdSpan.textContent = md;
       btn.classList.toggle('active', wd === anchorPartsTop.weekday);
       btn.addEventListener('click', () => jumpToWeekday(block, wd));
     });
