@@ -1130,9 +1130,11 @@
     const input = document.getElementById('search-input');
     input.value = '';
     document.getElementById('search-results').innerHTML = '';
-    document.getElementById('search-status').textContent = '都市データを検索します…';
-    // default to text pane
-    switchPane('text');
+    document.getElementById('search-status').textContent = '';
+    // show map by default
+    document.getElementById('map-wrap').classList.remove('hidden');
+    document.getElementById('map-status').classList.remove('hidden');
+    if (!mapInitialized) { renderWorldMap(); mapInitialized = true; }
     input.focus();
   }
   function closeSearch() {
@@ -1230,9 +1232,22 @@
     document.getElementById('btn-open-search').addEventListener('click', openSearch);
     document.querySelectorAll('[data-modal-close]').forEach(el => el.addEventListener('click', closeSearch));
     document.getElementById('search-modal').addEventListener('click', (e) => { if (e.target.classList.contains('modal-backdrop')) closeSearch(); });
-    document.getElementById('search-input').addEventListener('input', (e) => doSearch(e.target.value));
-    // Tabs for search/map
-    document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => switchPane(btn.dataset.pane)));
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      const q = e.target.value || '';
+      const isEmpty = normalize(q).length === 0;
+      const mapWrap = document.getElementById('map-wrap');
+      const mapStatus = document.getElementById('map-status');
+      if (isEmpty) {
+        mapWrap.classList.remove('hidden');
+        mapStatus.classList.remove('hidden');
+        document.getElementById('search-status').textContent = '';
+        renderSearchItems(document.getElementById('search-results'), []); // clear typed results
+      } else {
+        mapWrap.classList.add('hidden');
+        mapStatus.classList.add('hidden');
+        doSearch(q);
+      }
+    });
     document.querySelectorAll('.seg').forEach(btn => btn.addEventListener('click', () => {
       state.view.granularity = Number(btn.dataset.gran);
       saveView();
@@ -1384,7 +1399,7 @@
     const items = state.dataset.filter(it => normalize(it.country_en) === mapped || normalize(it.country_ja) === mapped)
       .sort((a, b) => Number(b.isCurated) - Number(a.isCurated) || normalize(a.city_ja).localeCompare(normalize(b.city_ja)));
     document.getElementById('map-status').textContent = items.length ? `${countryName} - ${items.length} 件` : `${countryName} - 該当なし`;
-    renderSearchItems(document.getElementById('map-results'), items.slice(0, 30));
+    renderSearchItems(document.getElementById('search-results'), items.slice(0, 30));
   }
 
   function regionKeyForCity(it) {
