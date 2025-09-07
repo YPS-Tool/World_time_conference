@@ -710,6 +710,7 @@
       makeWrappedRect(leftMin, 60).forEach(([l, w]) => {
         const d = document.createElement('div');
         d.className = 'h';
+        if (h >= 22 || h <= 5) d.classList.add('night');
         if (h === 0 && !zeroPlaced) {
           // zero cell shows date chip on middle layer; numbers layer leaves empty slot
           d.classList.add('date');
