@@ -1287,62 +1287,54 @@
     if (!isMap) document.getElementById('search-input').focus();
   }
 
-  function renderWorldMap() {
+  async function renderWorldMap() {
     const wrap = document.getElementById('map-wrap');
     wrap.innerHTML = '';
-    const svgNS = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(svgNS, 'svg');
-    svg.setAttribute('viewBox', '0 0 1000 420');
-    svg.classList.add('worldmap');
+    // Ensure local vendor libs are loaded
+    await ensureScript('/scripts/vendor/d3.min.js', 'd3');
+    await ensureScript('/scripts/vendor/topojson-client.min.js', 'topojson');
+    const width = wrap.clientWidth || 640;
+    const height = wrap.clientHeight || 360;
 
-    // Simple region boxes positioned roughly in a world map layout (equirectangular-ish)
-    const regions = [
-      { key: 'americas', x: 40, y: 80, w: 260, h: 220, label: 'アメリカ大陸' },
-      { key: 'europe', x: 360, y: 60, w: 160, h: 120, label: 'ヨーロッパ' },
-      { key: 'africa', x: 420, y: 190, w: 160, h: 180, label: 'アフリカ' },
-      { key: 'middleeast', x: 540, y: 150, w: 140, h: 120, label: '中東' },
-      { key: 'southasia', x: 620, y: 190, w: 160, h: 120, label: '南アジア' },
-      { key: 'seasia', x: 720, y: 210, w: 170, h: 120, label: '東南アジア' },
-      { key: 'eastasia', x: 740, y: 120, w: 180, h: 120, label: '東アジア' },
-      { key: 'oceania', x: 780, y: 280, w: 180, h: 120, label: 'オセアニア' },
-    ];
-    regions.forEach(r => {
-      const g = document.createElementNS(svgNS, 'g');
-      const rect = document.createElementNS(svgNS, 'rect');
-      rect.setAttribute('x', r.x);
-      rect.setAttribute('y', r.y);
-      rect.setAttribute('width', r.w);
-      rect.setAttribute('height', r.h);
-      rect.setAttribute('rx', '14');
-      rect.setAttribute('ry', '14');
-      rect.classList.add('region');
-      rect.setAttribute('data-region', r.key);
-      rect.setAttribute('tabindex', '0');
-      rect.setAttribute('role', 'button');
-      const label = document.createElementNS(svgNS, 'text');
-      label.setAttribute('x', r.x + r.w / 2);
-      label.setAttribute('y', r.y + r.h / 2);
-      label.setAttribute('text-anchor', 'middle');
-      label.setAttribute('dominant-baseline', 'middle');
-      label.classList.add('region-label');
-      label.textContent = r.label;
-      g.appendChild(rect); g.appendChild(label); svg.appendChild(g);
-    });
-    wrap.appendChild(svg);
+    const svg = d3.select(wrap).append('svg')
+      .attr('class', 'worldmap')
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('preserveAspectRatio', 'xMidYMid meet');
 
-    // Interactions
-    wrap.addEventListener('click', (e) => {
-      const el = e.target.closest('.region');
-      if (!el) return;
-      const key = el.getAttribute('data-region');
-      showMapRegion(key);
-      highlightRegion(el);
-    });
-    wrap.addEventListener('keydown', (e) => {
-      if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('region')) {
-        e.preventDefault();
-        const el = e.target; const key = el.getAttribute('data-region');
-        showMapRegion(key); highlightRegion(el);
+    const projection = d3.geoEquirectangular();
+    const path = d3.geoPath(projection);
+
+    // Load local TopoJSON
+    const topo = await (await fetch('data/world/countries-110m.json', { cache: 'no-cache' })).json();
+    const features = topojson.feature(topo, topo.objects.countries).features;
+
+    // Fit projection
+    projection.fitExtent([[10, 10], [width - 10, height - 10]], { type: 'FeatureCollection', features });
+
+    svg.append('g')
+      .selectAll('path')
+      .data(features)
+      .join('path')
+      .attr('class', 'region')
+      .attr('d', path)
+      .attr('tabindex', 0)
+      .attr('role', 'button')
+      .append('title')
+      .text(d => d.properties?.name || '');
+
+    // Click interaction
+    svg.selectAll('path.region').on('click', function (event, d) {
+      const name = d.properties?.name || '';
+      svg.selectAll('path.region').attr('aria-pressed', null);
+      d3.select(this).attr('aria-pressed', 'true');
+      showCountryItems(name);
+    }).on('keydown', function (event, d) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        const name = d.properties?.name || '';
+        svg.selectAll('path.region').attr('aria-pressed', null);
+        d3.select(this).attr('aria-pressed', 'true');
+        showCountryItems(name);
       }
     });
   }
@@ -1353,12 +1345,13 @@
     el.setAttribute('aria-pressed', 'true');
   }
 
-  function showMapRegion(key) {
-    const items = state.dataset.filter(it => regionKeyForCity(it) === key)
-      .sort((a, b) => Number(b.isCurated) - Number(a.isCurated) || normalize(a.city_ja).localeCompare(normalize(b.city_ja)))
-      .slice(0, 24);
-    document.getElementById('map-status').textContent = items.length ? `${items.length} 件` : '該当なし';
-    renderSearchItems(document.getElementById('map-results'), items);
+  function showCountryItems(countryName) {
+    const norm = normalize(countryName);
+    const mapped = mapCountryName(norm);
+    const items = state.dataset.filter(it => normalize(it.country_en) === mapped || normalize(it.country_ja) === mapped)
+      .sort((a, b) => Number(b.isCurated) - Number(a.isCurated) || normalize(a.city_ja).localeCompare(normalize(b.city_ja)));
+    document.getElementById('map-status').textContent = items.length ? `${countryName} - ${items.length} 件` : `${countryName} - 該当なし`;
+    renderSearchItems(document.getElementById('map-results'), items.slice(0, 30));
   }
 
   function regionKeyForCity(it) {
@@ -1379,5 +1372,40 @@
     }
     // Fallback
     return 'americas';
+  }
+
+  // Country name normalization map from TopoJSON -> dataset country_en
+  function mapCountryName(normName) {
+    const m = new Map([
+      ['united states of america','united states'],
+      ['russian federation','russia'],
+      ['cote d’ivoire','cote d ivoire'],
+      ['côte d’ivoire','cote d ivoire'],
+      ['cote d\'ivoire','cote d ivoire'],
+      ['kyrgyzstan','kyrgyzstan'],
+      ['north macedonia','macedonia'],
+      ['myanmar','myanmar'],
+      ['democratic republic of the congo','congo (kinshasa)'],
+      ['congo','congo (brazzaville)'],
+      ['south korea','south korea'],
+      ['north korea','north korea'],
+      ['laos','laos'],
+      ['czechia','czech republic'],
+      ['eswatini','swaziland'],
+      ['united republic of tanzania','tanzania'],
+      ['são tomé and príncipe','sao tome and principe'],
+    ]);
+    const direct = m.get(normName);
+    return direct || normName;
+  }
+
+  // Dynamically ensure external script (local vendor) is loaded
+  function ensureScript(src, globalKey) {
+    return new Promise((resolve, reject) => {
+      if (globalKey && window[globalKey]) return resolve();
+      const s = document.createElement('script');
+      s.src = src; s.async = true; s.onload = () => resolve(); s.onerror = (e) => reject(e);
+      document.head.appendChild(s);
+    });
   }
 })();
