@@ -485,12 +485,13 @@
       const d = pad2(block.date.day);
       dateOverlay.textContent = `${y}/${m}/${d} (${jpWeekdays[anchorPartsTop.weekday]})`;
     }
-    // Fill m/d for each weekday button based on topTz week
-    const S_DAY = 24 * 3600 * 1000;
-    const weekStartUtc = anchorUtc - anchorPartsTop.weekday * S_DAY; // Sunday 00:00 (topTz)
-    weekBtns.forEach((btn, i) => {
+    // Fill m/d for each weekday button using calendar-day math (DST-safe)
+    weekBtns.forEach((btn) => {
       const wd = Number(btn.dataset.weekday);
-      const ts = weekStartUtc + wd * S_DAY;
+      const delta = wd - anchorPartsTop.weekday; // [-6..+6]
+      const dUtc = new Date(Date.UTC(anchorPartsTop.year, anchorPartsTop.month - 1, anchorPartsTop.day + delta));
+      const ymd = { year: dUtc.getUTCFullYear(), month: dUtc.getUTCMonth() + 1, day: dUtc.getUTCDate() };
+      const ts = zonedMidnightUtcMs(ymd, topTz);
       const p = partsFromTs(ts, topTz);
       const md = `${p.month}/${p.day}`;
       const mdSpan = btn.querySelector('[data-md]');
