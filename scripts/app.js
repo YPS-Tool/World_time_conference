@@ -749,26 +749,24 @@
   }
 
   function addRowHours(container, tz, anchorUtc, hourWidth) {
-    const anchor = partsFromTs(anchorUtc, tz);
-    const anchorMin = anchor.hour * 60 + anchor.minute;
+    // Label per UTC hour slot using the local hour at its midpoint.
+    // Handles DST transitions (repeat/skip hour) naturally.
     let zeroPlaced = false;
-    for (let h = 0; h < 24; h++) {
-      const leftMin = h * 60 - anchorMin;
-      makeWrappedRect(leftMin, 60).forEach(([l, w]) => {
-        const d = document.createElement('div');
-        d.className = 'h';
-        if (h >= 22 || h <= 5) d.classList.add('night');
-        if (h === 0 && !zeroPlaced) {
-          // zero cell shows date chip on middle layer; numbers layer leaves empty slot
-          d.classList.add('date');
-          d.textContent = '';
-          zeroPlaced = true;
-        } else {
-          d.textContent = `${h}`;
-        }
-        d.style.left = `${(l / 60) * hourWidth + (hourWidth / 2)}px`;
-        container.appendChild(d);
-      });
+    for (let s = 0; s < 24; s++) {
+      const midTs = anchorUtc + (s + 0.5) * 60 * 60000;
+      const p = partsFromTs(midTs, tz);
+      const d = document.createElement('div');
+      d.className = 'h';
+      if (p.hour >= 22 || p.hour <= 5) d.classList.add('night');
+      if (!zeroPlaced && p.hour === 0) {
+        d.classList.add('date');
+        d.textContent = '';
+        zeroPlaced = true;
+      } else {
+        d.textContent = `${p.hour}`;
+      }
+      d.style.left = `${s * hourWidth + (hourWidth / 2)}px`;
+      container.appendChild(d);
     }
   }
 
