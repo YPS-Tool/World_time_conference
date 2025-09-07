@@ -120,7 +120,7 @@ body {
 .seg[aria-pressed="true"] { background: var(--primary); color: white; border-color: color-mix(in oklab, var(--primary), black 10%); }
 
 /* Date input with overlay text (yyyy/mm/dd (曜)) */
-.date-field { position: relative; display: inline-block; min-width: 220px; width: 240px; }
+.date-field { position: relative; display: inline-block; min-width: 180px; width: 200px; }
 .date-field .input { padding-right: 44px; }
 .date-field input[type="date"] { color: transparent; caret-color: transparent; }
 .date-field input[type="date"]::-webkit-datetime-edit { color: transparent; }
