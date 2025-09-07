@@ -445,6 +445,12 @@
         try { dateInput.showPicker && dateInput.showPicker(); } catch {}
         dateInput.focus();
       });
+      // Prevent text selection/drag in the field (Chrome ignores user-select for inputs)
+      dateField.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        try { dateInput.showPicker && dateInput.showPicker(); } catch {}
+      });
+      dateField.addEventListener('selectstart', (e) => e.preventDefault());
     }
     header.querySelector('[data-prev]').addEventListener('click', () => changeBlockDay(block, -1));
     header.querySelector('[data-next]').addEventListener('click', () => changeBlockDay(block, +1));
