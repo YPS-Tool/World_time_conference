@@ -492,6 +492,7 @@
       round.className = 'round-layer';
       addRoundPill(round, c.tzId, anchorUtc, hourWidth);
       addNightOverlay(round, c.tzId, anchorUtc, hourWidth);
+      addEarlyOverlay(round, c.tzId, anchorUtc, hourWidth);
       addDateChip(round, c.tzId, anchorUtc, hourWidth);
       inner.appendChild(round);
 
@@ -804,6 +805,39 @@
         if (right > left) {
           const el = document.createElement('div');
           el.className = 'night';
+          el.style.left = `${left - pLeft}px`;
+          el.style.width = `${right - left}px`;
+          p.appendChild(el);
+        }
+      });
+    });
+  }
+
+  function addEarlyOverlay(container, tz, anchorUtc, hourWidth) {
+    // Render early morning band (06:00-08:00) clipped inside pill segments.
+    const anchor = partsFromTs(anchorUtc, tz);
+    const anchorMin = anchor.hour * 60 + anchor.minute;
+    const intervals = [ { start: 6 * 60, len: 2 * 60 } ];
+
+    const segPixels = [];
+    intervals.forEach(seg => {
+      makeWrappedRect(seg.start - anchorMin, seg.len).forEach(([l, w]) => {
+        const leftPx = (l / 60) * hourWidth;
+        const rightPx = ((l + w) / 60) * hourWidth;
+        segPixels.push([leftPx, rightPx]);
+      });
+    });
+
+    container.querySelectorAll('.pill').forEach(p => {
+      const pLeft = parseFloat(p.style.left) || 0;
+      const pWidth = parseFloat(p.style.width) || 0;
+      const pRight = pLeft + pWidth;
+      segPixels.forEach(([sLeft, sRight]) => {
+        const left = Math.max(pLeft, sLeft);
+        const right = Math.min(pRight, sRight);
+        if (right > left) {
+          const el = document.createElement('div');
+          el.className = 'early';
           el.style.left = `${left - pLeft}px`;
           el.style.width = `${right - left}px`;
           p.appendChild(el);
