@@ -490,9 +490,7 @@
       // rounded visual layer (middle)
       const round = document.createElement('div');
       round.className = 'round-layer';
-      const pill = document.createElement('div');
-      pill.className = 'pill';
-      round.appendChild(pill);
+      addRoundPill(round, c.tzId, anchorUtc, hourWidth);
       addDateChip(round, c.tzId, anchorUtc, hourWidth);
       inner.appendChild(round);
 
@@ -738,6 +736,39 @@
       chip.style.left = `${(l / 60) * hourWidth + (hourWidth / 2)}px`;
       container.appendChild(chip);
     }
+  }
+
+  function addRoundPill(container, tz, anchorUtc, hourWidth) {
+    // Create a pill spanning local 0:00 -> 23:00.
+    // If this range wraps across the 24h window, split into two pieces
+    // and round the outer ends: left at 0:00, right at 23:00.
+    const anchor = partsFromTs(anchorUtc, tz);
+    const anchorMin = anchor.hour * 60 + anchor.minute;
+    const parts = makeWrappedRect(0 - anchorMin, 23 * 60);
+    const radius = '14px';
+    const zero = '0px';
+    parts.forEach(([l, w], i) => {
+      const el = document.createElement('div');
+      el.className = 'pill';
+      el.style.left = `${(l / 60) * hourWidth}px`;
+      el.style.width = `${(w / 60) * hourWidth}px`;
+      if (parts.length === 1) {
+        // both ends rounded (default border-radius applies)
+      } else if (i === 0) {
+        // first segment: round start (left), square end (right)
+        el.style.borderTopLeftRadius = radius;
+        el.style.borderBottomLeftRadius = radius;
+        el.style.borderTopRightRadius = zero;
+        el.style.borderBottomRightRadius = zero;
+      } else {
+        // second segment: square start (left), round end (right)
+        el.style.borderTopLeftRadius = zero;
+        el.style.borderBottomLeftRadius = zero;
+        el.style.borderTopRightRadius = radius;
+        el.style.borderBottomRightRadius = radius;
+      }
+      container.appendChild(el);
+    });
   }
 
   function addVLines(container, hourWidth) {
