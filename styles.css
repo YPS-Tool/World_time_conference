@@ -143,9 +143,9 @@ body {
 /* Center panel: blocks */
 .blocks-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 .block { display: grid; gap: 10px; background: white; border: 1px solid var(--outline); border-radius: 16px; padding: 12px; box-shadow: var(--shadow); margin-bottom: 12px; }
-.block-toolbar { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding-bottom: 8px; border-bottom: 1px dashed var(--outline); }
+.block-toolbar { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 12px; padding-bottom: 8px; border-bottom: 1px dashed var(--outline); }
 .block-title { font-weight: 800; letter-spacing: .2px; }
-.block-right { display: inline-flex; gap: 6px; align-items: center; }
+.block-right { display: inline-flex; gap: 6px; align-items: flex-end; }
 .btn-icon { width: 32px; height: 32px; display: inline-grid; place-items: center; border-radius: 8px; border: 1px solid var(--outline); background: var(--surface); cursor: pointer; color: var(--text); }
 .btn-icon:hover { background: color-mix(in oklab, var(--surface), white 40%); }
 .btn-icon.danger { color: #7a2a2a; border-color: color-mix(in oklab, var(--primary), black 10%); background: color-mix(in oklab, var(--primary), white 70%); }
