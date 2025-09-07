@@ -59,9 +59,20 @@
           <button class="icon-btn" data-modal-close aria-label="閉じる">✕</button>
         </div>
         <div class="modal-body">
-          <input id="search-input" class="input" type="search" placeholder="都市名/国名/別名（最大10件）" />
-          <div id="search-status" class="small-muted"></div>
-          <ul id="search-results" class="search-results"></ul>
+          <div class="tabs" role="tablist" aria-label="検索方法">
+            <button class="tab active" role="tab" aria-selected="true" data-pane="text">文字で検索</button>
+            <button class="tab" role="tab" aria-selected="false" data-pane="map">地図から探す</button>
+          </div>
+          <div id="pane-text" class="pane" role="tabpanel">
+            <input id="search-input" class="input" type="search" placeholder="都市名/国名/別名（最大10件）" />
+            <div id="search-status" class="small-muted"></div>
+            <ul id="search-results" class="search-results"></ul>
+          </div>
+          <div id="pane-map" class="pane hidden" role="tabpanel" aria-hidden="true">
+            <div id="map-wrap" class="map-wrap" aria-label="世界地図"></div>
+            <div id="map-status" class="small-muted"></div>
+            <ul id="map-results" class="search-results"></ul>
+          </div>
         </div>
       </div>
     </div>

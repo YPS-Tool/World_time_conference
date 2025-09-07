@@ -89,6 +89,19 @@ body {
   background: white;
 }
 
+/* Tabs in modal */
+.tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+.tab { padding: 6px 10px; border-radius: 10px; border: 1px solid var(--outline); background: white; cursor: pointer; }
+.tab.active { background: var(--accent); color: #2e2323; border-color: color-mix(in oklab, var(--accent), black 10%); }
+.pane { margin-top: 6px; }
+
+/* Map */
+.map-wrap { border: 1px solid var(--outline); border-radius: 12px; overflow: hidden; background: #fff; margin-bottom: 8px; }
+.worldmap { width: 100%; height: auto; display: block; background: linear-gradient(180deg, #fefaf7, #fff); }
+.region { fill: #faf6f2; stroke: var(--outline); stroke-width: 1; cursor: pointer; transition: fill .2s ease, transform .05s ease; }
+.region:hover, .region[aria-pressed="true"] { fill: color-mix(in oklab, var(--accent), white 70%); }
+.region-label { font-size: 11px; fill: var(--text-muted); pointer-events: none; }
+
 /* Left panel */
 .reco {
   border: 1px dashed var(--outline);

@@ -1131,6 +1131,8 @@
     input.value = '';
     document.getElementById('search-results').innerHTML = '';
     document.getElementById('search-status').textContent = '都市データを検索します…';
+    // default to text pane
+    switchPane('text');
     input.focus();
   }
   function closeSearch() {
@@ -1153,6 +1155,12 @@
         .map(x => x.it);
     }
     document.getElementById('search-status').textContent = items.length ? `${items.length} 件` : tokens.length ? '該当なし' : 'キーワードを入力してください';
+    renderSearchItems(list, items);
+  }
+  // matchCity removed; now using scored search
+
+  function renderSearchItems(listEl, items) {
+    listEl.innerHTML = '';
     for (const it of items) {
       const li = document.createElement('li');
       li.className = 'search-item';
@@ -1165,22 +1173,13 @@
         </div>
         <div><button class="btn btn-primary">追加</button></div>
       `;
-      // Whole row click adds the city
       const add = () => { addCity(it); closeSearch(); };
-      li.addEventListener('click', (e) => {
-        // allow button click to work; stop double-fire
-        if (e.target instanceof HTMLElement && e.target.closest('button')) return;
-        add();
-      });
-      li.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); add(); }
-      });
-      // Keep the explicit button too
+      li.addEventListener('click', (e) => { if (e.target instanceof HTMLElement && e.target.closest('button')) return; add(); });
+      li.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); add(); } });
       li.querySelector('button').addEventListener('click', (e) => { e.stopPropagation(); add(); });
-      list.appendChild(li);
+      listEl.appendChild(li);
     }
   }
-  // matchCity removed; now using scored search
 
   // ---------- URL params ----------
   function applyUrlParams() {
@@ -1232,6 +1231,8 @@
     document.querySelectorAll('[data-modal-close]').forEach(el => el.addEventListener('click', closeSearch));
     document.getElementById('search-modal').addEventListener('click', (e) => { if (e.target.classList.contains('modal-backdrop')) closeSearch(); });
     document.getElementById('search-input').addEventListener('input', (e) => doSearch(e.target.value));
+    // Tabs for search/map
+    document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => switchPane(btn.dataset.pane)));
     document.querySelectorAll('.seg').forEach(btn => btn.addEventListener('click', () => {
       state.view.granularity = Number(btn.dataset.gran);
       saveView();
@@ -1268,4 +1269,115 @@
   }
 
   document.addEventListener('DOMContentLoaded', init);
+
+  // --------- Map search ---------
+  let mapInitialized = false;
+  function switchPane(pane) {
+    const tabText = document.querySelector('.tab[data-pane="text"]');
+    const tabMap = document.querySelector('.tab[data-pane="map"]');
+    const pText = document.getElementById('pane-text');
+    const pMap = document.getElementById('pane-map');
+    const isMap = pane === 'map';
+    tabText.classList.toggle('active', !isMap);
+    tabMap.classList.toggle('active', isMap);
+    pText.classList.toggle('hidden', isMap);
+    pMap.classList.toggle('hidden', !isMap);
+    pMap.setAttribute('aria-hidden', String(!isMap));
+    if (isMap && !mapInitialized) { renderWorldMap(); mapInitialized = true; }
+    if (!isMap) document.getElementById('search-input').focus();
+  }
+
+  function renderWorldMap() {
+    const wrap = document.getElementById('map-wrap');
+    wrap.innerHTML = '';
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('viewBox', '0 0 1000 420');
+    svg.classList.add('worldmap');
+
+    // Simple region boxes positioned roughly in a world map layout (equirectangular-ish)
+    const regions = [
+      { key: 'americas', x: 40, y: 80, w: 260, h: 220, label: 'アメリカ大陸' },
+      { key: 'europe', x: 360, y: 60, w: 160, h: 120, label: 'ヨーロッパ' },
+      { key: 'africa', x: 420, y: 190, w: 160, h: 180, label: 'アフリカ' },
+      { key: 'middleeast', x: 540, y: 150, w: 140, h: 120, label: '中東' },
+      { key: 'southasia', x: 620, y: 190, w: 160, h: 120, label: '南アジア' },
+      { key: 'seasia', x: 720, y: 210, w: 170, h: 120, label: '東南アジア' },
+      { key: 'eastasia', x: 740, y: 120, w: 180, h: 120, label: '東アジア' },
+      { key: 'oceania', x: 780, y: 280, w: 180, h: 120, label: 'オセアニア' },
+    ];
+    regions.forEach(r => {
+      const g = document.createElementNS(svgNS, 'g');
+      const rect = document.createElementNS(svgNS, 'rect');
+      rect.setAttribute('x', r.x);
+      rect.setAttribute('y', r.y);
+      rect.setAttribute('width', r.w);
+      rect.setAttribute('height', r.h);
+      rect.setAttribute('rx', '14');
+      rect.setAttribute('ry', '14');
+      rect.classList.add('region');
+      rect.setAttribute('data-region', r.key);
+      rect.setAttribute('tabindex', '0');
+      rect.setAttribute('role', 'button');
+      const label = document.createElementNS(svgNS, 'text');
+      label.setAttribute('x', r.x + r.w / 2);
+      label.setAttribute('y', r.y + r.h / 2);
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('dominant-baseline', 'middle');
+      label.classList.add('region-label');
+      label.textContent = r.label;
+      g.appendChild(rect); g.appendChild(label); svg.appendChild(g);
+    });
+    wrap.appendChild(svg);
+
+    // Interactions
+    wrap.addEventListener('click', (e) => {
+      const el = e.target.closest('.region');
+      if (!el) return;
+      const key = el.getAttribute('data-region');
+      showMapRegion(key);
+      highlightRegion(el);
+    });
+    wrap.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('region')) {
+        e.preventDefault();
+        const el = e.target; const key = el.getAttribute('data-region');
+        showMapRegion(key); highlightRegion(el);
+      }
+    });
+  }
+
+  function highlightRegion(el) {
+    document.querySelectorAll('.region[aria-pressed]')
+      .forEach(n => n.setAttribute('aria-pressed', 'false'));
+    el.setAttribute('aria-pressed', 'true');
+  }
+
+  function showMapRegion(key) {
+    const items = state.dataset.filter(it => regionKeyForCity(it) === key)
+      .sort((a, b) => Number(b.isCurated) - Number(a.isCurated) || normalize(a.city_ja).localeCompare(normalize(b.city_ja)))
+      .slice(0, 24);
+    document.getElementById('map-status').textContent = items.length ? `${items.length} 件` : '該当なし';
+    renderSearchItems(document.getElementById('map-results'), items);
+  }
+
+  function regionKeyForCity(it) {
+    const tz = it.tzId || '';
+    const c = (it.country_en || '').toLowerCase();
+    const r = tz.split('/')[0];
+    if (r === 'Europe') return 'europe';
+    if (r === 'Africa') return 'africa';
+    if (r === 'America' || r === 'Atlantic') return 'americas';
+    if (r === 'Australia' || r === 'Pacific' || c.includes('new zealand')) return 'oceania';
+    if (r === 'Asia') {
+      if (['united arab emirates','saudi arabia','qatar','bahrain','kuwait','oman','israel','turkey','jordan','lebanon','iraq','iran'].some(s => c.includes(s))) return 'middleeast';
+      if (['india','pakistan','sri lanka','bangladesh','nepal','maldives','bhutan'].some(s => c.includes(s))) return 'southasia';
+      if (['japan','south korea','korea','china','hong kong','taiwan','mongolia'].some(s => c.includes(s))) return 'eastasia';
+      if (['singapore','thailand','vietnam','indonesia','malaysia','philippines','cambodia','laos','myanmar','brunei','timor'].some(s => c.includes(s))) return 'seasia';
+      // fallback for Asia
+      return 'eastasia';
+    }
+    // Fallback
+    return 'americas';
+  }
 })();
