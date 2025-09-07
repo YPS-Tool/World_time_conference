@@ -109,8 +109,8 @@
     return `${p.month}月${p.day}日(${jpWeekdays[p.weekday]}) ${pad2(p.hour)}:${pad2(p.minute)}`;
   }
 
-  // Localized output helpers (only for candidate text)
-  const localeMap = { ja: 'ja-JP', en: 'en-US', fr: 'fr-FR', zh: 'zh-CN' };
+  // Localized output helpers (only for candidate text) — JA/EN only
+  const localeMap = { ja: 'ja-JP', en: 'en-US' };
   function formatOutDateTime(ts, tz, lang) {
     if (lang === 'ja') return formatJP(ts, tz);
     const locale = localeMap[lang] || 'en-US';
@@ -151,6 +151,8 @@
     try {
       const v = JSON.parse(localStorage.getItem(KEYS.view) || 'null');
       if (v && typeof v === 'object') state.view = { ...DEFAULT_VIEW, ...v };
+      // sanitize lang to supported set
+      if (state.view.lang !== 'ja' && state.view.lang !== 'en') state.view.lang = 'ja';
     } catch {}
     try {
       const c = JSON.parse(localStorage.getItem(KEYS.cities) || '[]');
